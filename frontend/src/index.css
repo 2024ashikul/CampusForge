@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Custom component style rules to seamlessly integrate the UIW editor into CampusForge dark design rules */
+.wmde-markdown-var-override .w-md-editor {
+  background-color: #0D1520 !important;
+  border-color: #1A2635 !important;
+}
+
+.wmde-markdown-var-override .w-md-editor-toolbar {
+  background-color: #141E2B !important;
+  border-bottom: 1px solid #1A2635 !important;
+}
+
+.wmde-markdown-var-override .w-md-editor-toolbar button {
+  color: #94A3B8 !important;
+}
+
+.wmde-markdown-var-override .w-md-editor-toolbar button:hover {
+  color: #F8FAFC !important;
+  background-color: #1C2533 !important;
+}
+
+.wmde-markdown-var-override .w-md-editor-preview {
+  background-color: #090F16 !important;
+  border-left: 1px solid #1A2635 !important;
+}
+
+
+
+/* 🗺️ TAILWIND v4 CONFIGURATION ENGINE */
+@theme {
+  --color-primary: var(--bg-primary);
+  --color-card: var(--bg-card);
+  --color-footer: var(--bg-card-footer);
+  --color-customBorder: var(--border-color);
+  --color-mainText: var(--text-primary);
+  --color-subText: var(--text-secondary);
+  --color-accent: var(--brand-accent);
+  --color-accentHover: var(--brand-accent-hover);
+}
+
+/* 🌙 DEFAULT DARK THEME SYSTEM VALUES */
+:root {
+  --bg-primary: #0D1520;
+  --bg-card: #141E2B;
+  --bg-card-footer: #101924;
+  --border-color: #1A2635;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --brand-accent: #C5A25D;
+  --brand-accent-hover: #FBBF24;
+}
+
+/* ☀️ LIGHT THEME INJECTION VALUES */
+[data-theme='light'] {
+  --bg-primary: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-card-footer: #F1F5F9;
+  --border-color: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --brand-accent: #B45309;
+  --brand-accent-hover: #D97706;
+}
+
+/* Smooth transition when swapping themes */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}

@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusForge – Academic Skill & Collaboration Platform</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0d1b2a;
+            --navy-2: #132238;
+            --navy-3: #1c3050;
+            --gold: #c9973a;
+            --gold-light: #e8b85a;
+            --gold-pale: #f5dfa0;
+            --cream: #f7f3ec;
+            --white: #ffffff;
+            --text-muted: #8a9bb0;
+            --border: rgba(201, 151, 58, 0.18);
+            --card-bg: rgba(19, 34, 56, 0.85);
+            --success: #3ecf8e;
+            --danger: #e05c5c;
+            --info: #4ca3dd;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            --font-head: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--navy);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--navy-2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 3px;
+        }
+
+        /* ── PAGES ── */
+        .page {
+            display: none;
+            animation: fadeUp .35s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(13, 27, 42, 0.92);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 62px;
+        }
+
+        .nav-logo {
+            font-family: var(--font-head);
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-logo span {
+            color: var(--gold);
+        }
+
+        .nav-logo .icon {
+            font-size: 1.4rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-link {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: .85rem;
+            font-weight: 500;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--white);
+            background: rgba(201, 151, 58, 0.12);
+        }
+
+        .nav-link.active {
+            color: var(--gold-light);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold) 0%, #8b5e1f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: .8rem;
+            cursor: pointer;
+            border: 2px solid var(--border);
+        }
+
+        .notif-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: color .2s;
+            position: relative;
+        }
+
+        .notif-btn:hover {
+            color: var(--gold);
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 7px;
+            height: 7px;
+            background: var(--gold);
+            border-radius: 50%;
+            border: 1.5px solid var(--navy);
+        }
+
+        /* ── LAYOUT ── */
+        .main {
+            padding-top: 62px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: .875rem;
+            padding: 9px 20px;
+            border-radius: 9px;
+            border: none;
+            cursor: pointer;
+            transition: all .2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold) 0%, #a07020 100%);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(201, 151, 58, 0.3);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(201, 151, 58, 0.1);
+            color: var(--gold-light);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(201, 151, 58, 0.18);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-ghost:hover {
+            color: var(--white);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: .8rem;
+            border-radius: 7px;
+        }
+
+        .btn-danger {
+            background: rgba(224, 92, 92, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(224, 92, 92, 0.2);
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── BADGE ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            padding: 3px 9px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .badge-gold {
+            background: rgba(201, 151, 58, 0.18);
+            color: var(--gold-light);
+            border: 1px solid rgba(201, 151, 58, 0.25);
+        }
+
+        .badge-green {
+            background: rgba(62, 207, 142, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(62, 207, 142, 0.2);
+        }
+
+        .badge-blue {
+            background: rgba(76, 163, 221, 0.15);
+            color: var(--info);
+            border: 1px solid rgba(76, 163, 221, 0.2);
+        }
+
+        .badge-red {
+            background: rgba(224, 92, 92, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(224, 92, 92, 0.2);
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+
+        .section-title {
+            font-family: var(--font-head);
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        .section-sub {
+            color: var(--text-muted);
+            font-size: .85rem;
+            margin-top: 3px;
+        }
+
+        /* ── TAG ── */
+        .tag {
+            display: inline-block;
+            font-size: .72rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tag.active,
+        .tag:hover {
+            background: rgba(201, 151, 58, 0.15);
+            color: var(--gold-light);
+            border-color: var(--border);
+            cursor: pointer;
+        }
+
+        /* ── AVATAR ── */
+        .avatar {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-head);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            font-size: .75rem;
+        }
+
+        .avatar-md {
+            width: 42px;
+            height: 42px;
+            font-size: .9rem;
+        }
+
+        .avatar-lg {
+            width: 62px;
+            height: 62px;
+            font-size: 1.2rem;
+        }
+
+        .avatar-xl {
+            width: 90px;
+            height: 90px;
+            font-size: 1.7rem;
+        }
+
+        /* ── STAT BOX ── */
+        .stat-box {
+            text-align: center;
+            padding: 18px 14px;
+        }
+
+        .stat-num {
+            font-family: var(--font-head);
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--gold-light);
+        }
+
+        .stat-lbl {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 22px 0;
+        }
+
+        /* ── STAR RATING ── */
+        .stars {
+            color: var(--gold);
+            font-size: .9rem;
+            letter-spacing: 1px;
+        }
+
+        /* ── PROGRESS ── */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+        }
+
+        /* ── SEARCH ── */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 0 14px;
+            height: 40px;
+        }
+
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--white);
+            font-family: var(--font-body);
+            font-size: .875rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 999;
+            background: var(--navy-3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 20px;
+            font-size: .875rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all .3s;
+            pointer-events: none;
+            max-width: 300px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #toast.success {
+            border-color: rgba(62, 207, 142, 0.4);
+        }
+
+        #toast.info {
+            border-color: rgba(76, 163, 221, 0.4);
+        }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--navy-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: fadeUp .25s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: color .2s;
+        }
+
+        .modal-close:hover {
+            color: var(--white);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* ── FORM ── */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--white);
+            font-family: var(--font-body);
+            font-size: .875rem;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--gold);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        select.form-control option {
+            background: var(--navy-2);
+        }
+
+        /* ── GRID ── */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .grid-12 {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .grid-21 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: LANDING / HERO
+  ──────────────────────────────────────────────── */
+        .hero {
+            min-height: calc(100vh - 62px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            padding: 80px 24px 60px;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201, 151, 58, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 80% 80%, rgba(76, 163, 221, 0.07) 0%, transparent 60%);
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(201, 151, 58, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(201, 151, 58, 0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 80%);
+        }
+
+        .hero-eyebrow {
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--gold);
+            background: rgba(201, 151, 58, 0.1);
+            border: 1px solid rgba(201, 151, 58, 0.2);
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-family: var(--font-head);
+            font-size: clamp(2.4rem, 6vw, 4.2rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 22px;
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+
+        .hero-title .accent {
+            color: var(--gold);
+        }
+
+        .hero-sub {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            max-width: 560px;
+            line-height: 1.7;
+            margin-bottom: 36px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 48px;
+            margin-top: 64px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-stat-num {
+            font-family: var(--font-head);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--gold-light);
+        }
+
+        .hero-stat-lbl {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .feature-strip {
+            padding: 60px 0;
+            background: var(--navy-2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-name {
+            font-family: var(--font-head);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .feature-desc {
+            font-size: .83rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: DASHBOARD
+  ──────────────────────────────────────────────── */
+        .dash-wrap {
+            padding: 32px 0 60px;
+        }
+
+        .dash-greeting {
+            margin-bottom: 28px;
+        }
+
+        .dash-greeting h1 {
+            font-family: var(--font-head);
+            font-size: 1.7rem;
+            font-weight: 800;
+        }
+
+        .dash-greeting p {
+            color: var(--text-muted);
+            font-size: .9rem;
+            margin-top: 4px;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .stat-card-inner {
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon-gold {
+            background: rgba(201, 151, 58, 0.15);
+        }
+
+        .stat-icon-blue {
+            background: rgba(76, 163, 221, 0.15);
+        }
+
+        .stat-icon-green {
+            background: rgba(62, 207, 142, 0.15);
+        }
+
+        .stat-icon-red {
+            background: rgba(224, 92, 92, 0.15);
+        }
+
+        .stat-info-num {
+            font-family: var(--font-head);
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .stat-info-lbl {
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .activity-text {
+            font-size: .875rem;
+            line-height: 1.5;
+        }
+
+        .activity-time {
+            font-size: .75rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: STUDENTS / SKILLS
+  ──────────────────────────────────────────────── */
+        .skill-page-wrap {
+            padding: 32px 0 60px;
+        }
+
+        .skill-card {
+            padding: 20px;
+        }
+
+        .skill-card-top {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .student-name {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: .95rem;
+        }
+
+        .student-id {
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .skill-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: PROJECTS
+  ──────────────────────────────────────────────── */
+        .project-card-img {
+            height: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            position: relative;
+        }
+
+        .project-card-body {
+            padding: 18px;
+        }
+
+        .project-title {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+
+        .project-desc {
+            font-size: .82rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .project-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .project-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: EVENTS
+  ──────────────────────────────────────────────── */
+        .event-card {
+            display: flex;
+            overflow: hidden;
+        }
+
+        .event-date-box {
+            width: 70px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, var(--gold) 0%, #7a4b10 100%);
+            padding: 14px 8px;
+            text-align: center;
+        }
+
+        .event-day {
+            font-family: var(--font-head);
+            font-size: 1.7rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .event-mon {
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            opacity: .85;
+            margin-top: 2px;
+        }
+
+        .event-body {
+            padding: 16px 18px;
+            flex: 1;
+        }
+
+        .event-title {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: .95rem;
+            margin-bottom: 6px;
+        }
+
+        .event-meta {
+            font-size: .8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .event-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: CLUBS
+  ──────────────────────────────────────────────── */
+        .club-card {
+            padding: 22px;
+            text-align: center;
+        }
+
+        .club-icon {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+        }
+
+        .club-name {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+
+        .club-desc {
+            font-size: .8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+
+        .club-meta {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: PROFILE
+  ──────────────────────────────────────────────── */
+        .profile-header {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 22px;
+        }
+
+        .profile-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-name {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .profile-info {
+            font-size: .85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .profile-bio {
+            font-size: .875rem;
+            line-height: 1.7;
+            color: #b0c0d4;
+            margin-top: 12px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 0;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .profile-stat {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-right: 1px solid var(--border);
+        }
+
+        .profile-stat:last-child {
+            border-right: none;
+        }
+
+        .profile-stat-num {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--gold-light);
+        }
+
+        .profile-stat-lbl {
+            font-size: .75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .skill-level {
+            margin-bottom: 12px;
+        }
+
+        .skill-level-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .skill-level-name {
+            font-size: .85rem;
+            font-weight: 500;
+        }
+
+        .skill-level-pct {
+            font-size: .78rem;
+            color: var(--gold);
+        }
+
+        /* ────────────────────────────────────────────────
+     PAGE: TRENDING
+  ──────────────────────────────────────────────── */
+        .trend-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .trend-rank {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            width: 28px;
+            flex-shrink: 0;
+        }
+
+        .trend-rank.top {
+            color: var(--gold);
+        }
+
+        .trend-bar-wrap {
+            flex: 1;
+        }
+
+        .trend-skill-name {
+            font-weight: 500;
+            font-size: .9rem;
+            margin-bottom: 5px;
+        }
+
+        .trend-count {
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+
+        /* ────────────────────────────────────────────────
+     MISC HELPERS
+  ──────────────────────────────────────────────── */
+        .flex {
+            display: flex;
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-3 {
+            gap: 12px;
+        }
+
+        .mt-1 {
+            margin-top: 6px;
+        }
+
+        .mt-2 {
+            margin-top: 12px;
+        }
+
+        .mt-3 {
+            margin-top: 18px;
+        }
+
+        .mb-2 {
+            margin-bottom: 12px;
+        }
+
+        .mb-3 {
+            margin-bottom: 18px;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .text-gold {
+            color: var(--gold-light);
+        }
+
+        .text-sm {
+            font-size: .82rem;
+        }
+
+        .text-xs {
+            font-size: .75rem;
+        }
+
+        .fw-600 {
+            font-weight: 600;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 80px;
+        }
+
+        /* responsive tweaks */
+        @media (max-width: 900px) {
+
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid-12,
+            .grid-21 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .grid-2,
+            .grid-3,
+            .grid-4,
+            .stat-row {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-stats {
+                gap: 28px;
+            }
+
+            nav {
+                padding: 0 16px;
+            }
+
+            .nav-links .nav-link {
+                padding: 6px 9px;
+                font-size: .78rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── NAV ── -->
+    <nav>
+        <div class="nav-logo" onclick="showPage('landing')">
+            <span class="icon">⚙️</span>
+            <span>Campus<span>Forge</span></span>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <button class="nav-link" onclick="showPage('dashboard')" data-page="dashboard">Dashboard</button>
+            <button class="nav-link" onclick="showPage('students')" data-page="students">Students</button>
+            <button class="nav-link" onclick="showPage('projects')" data-page="projects">Projects</button>
+            <button class="nav-link" onclick="showPage('events')" data-page="events">Events</button>
+            <button class="nav-link" onclick="showPage('clubs')" data-page="clubs">Clubs</button>
+            <button class="nav-link" onclick="showPage('trending')" data-page="trending">Trending</button>
+        </div>
+        <div class="nav-right">
+            <button class="notif-btn" onclick="showToast('You have 3 new notifications', 'info')">🔔<span
+                    class="notif-dot"></span></button>
+            <div class="nav-avatar" onclick="showPage('profile')" title="My Profile">NS</div>
+        </div>
+    </nav>
+
+    <div class="main">
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: LANDING
+══════════════════════════════════════════════ -->
+        <div class="page active" id="page-landing">
+            <section class="hero">
+                <div class="hero-bg"></div>
+                <div class="hero-grid"></div>
+                <div class="hero-eyebrow">CUET · CSE Department · Batch 2023</div>
+                <h1 class="hero-title">Your Academic<br><span class="accent">Skill & Collaboration</span><br>Platform
+                </h1>
+                <p class="hero-sub">Discover peers, showcase your work, join events, and build something remarkable —
+                    all in one connected space.</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="showPage('dashboard')"
+                        style="font-size:.95rem;padding:12px 28px">
+                        🚀 Explore Platform
+                    </button>
+                    <button class="btn btn-secondary" onclick="openModal('modalRegister')"
+                        style="font-size:.95rem;padding:12px 28px">
+                        ✦ Register
+                    </button>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">312</div>
+                        <div class="hero-stat-lbl">Students</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">84</div>
+                        <div class="hero-stat-lbl">Projects</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">27</div>
+                        <div class="hero-stat-lbl">Events</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">11</div>
+                        <div class="hero-stat-lbl">Clubs</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="feature-strip">
+                <div class="container">
+                    <div class="grid-4">
+                        <div class="feature-item">
+                            <div class="feature-icon">🔍</div>
+                            <div class="feature-name">Skill Discovery</div>
+                            <div class="feature-desc">Find peers with the exact skills you need for your next project or
+                                competition.</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🗂️</div>
+                            <div class="feature-name">Project Showcase</div>
+                            <div class="feature-desc">Upload, display, and get your projects rated by the academic
+                                community.</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📅</div>
+                            <div class="feature-name">Event Hub</div>
+                            <div class="feature-desc">Browse seminars, hackathons, and competitions — personalized to
+                                your interests.</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🏛️</div>
+                            <div class="feature-name">Club Connect</div>
+                            <div class="feature-desc">Join clubs, manage memberships, and stay updated on activities
+                                without the noise.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: DASHBOARD
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-dashboard">
+            <div class="container dash-wrap">
+
+                <div class="dash-greeting">
+                    <h1>Good morning, Nabil 👋</h1>
+                    <p>Here's what's happening on CampusForge today — Monday, May 4</p>
+                </div>
+
+                <!-- Stats row -->
+                <div class="stat-row">
+                    <div class="stat-card card" style="cursor:default">
+                        <div class="stat-card-inner">
+                            <div class="stat-icon stat-icon-gold">⭐</div>
+                            <div>
+                                <div class="stat-info-num">7</div>
+                                <div class="stat-info-lbl">Skills Listed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card card" style="cursor:default">
+                        <div class="stat-card-inner">
+                            <div class="stat-icon stat-icon-blue">🗂️</div>
+                            <div>
+                                <div class="stat-info-num">3</div>
+                                <div class="stat-info-lbl">Projects Posted</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card card" style="cursor:default">
+                        <div class="stat-card-inner">
+                            <div class="stat-icon stat-icon-green">📅</div>
+                            <div>
+                                <div class="stat-info-num">2</div>
+                                <div class="stat-info-lbl">Upcoming Events</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card card" style="cursor:default">
+                        <div class="stat-card-inner">
+                            <div class="stat-icon stat-icon-red">🏛️</div>
+                            <div>
+                                <div class="stat-info-num">2</div>
+                                <div class="stat-info-lbl">Club Memberships</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-21">
+                    <div>
+                        <!-- Suggested collaborators -->
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Suggested Collaborators</div>
+                                <div class="section-sub">Based on your skill gaps</div>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="showPage('students')">View all</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">
+                            <div class="card" style="cursor:default">
+                                <div class="card-body"
+                                    style="display:flex;align-items:center;gap:14px;padding:16px 18px">
+                                    <div class="avatar avatar-md"
+                                        style="background:linear-gradient(135deg,#4ca3dd,#1a5f8b)">AI</div>
+                                    <div style="flex:1">
+                                        <div style="font-weight:600;font-size:.9rem">Ashikul Islam</div>
+                                        <div class="text-muted text-xs" style="margin-top:2px">ID: 2304001 · React,
+                                            Node.js, Firebase</div>
+                                    </div>
+                                    <span class="badge badge-green">Match 94%</span>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="showToast('Connection request sent to Ashikul!','success')">Connect</button>
+                                </div>
+                            </div>
+                            <div class="card" style="cursor:default">
+                                <div class="card-body"
+                                    style="display:flex;align-items:center;gap:14px;padding:16px 18px">
+                                    <div class="avatar avatar-md"
+                                        style="background:linear-gradient(135deg,#c9973a,#7a4b10)">MJ</div>
+                                    <div style="flex:1">
+                                        <div style="font-weight:600;font-size:.9rem">Muhammad Abrar Jawad</div>
+                                        <div class="text-muted text-xs" style="margin-top:2px">ID: 2304030 · ML, Python,
+                                            Data Analysis</div>
+                                    </div>
+                                    <span class="badge badge-gold">Match 88%</span>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="showToast('Connection request sent to Jawad!','success')">Connect</button>
+                                </div>
+                            </div>
+                            <div class="card" style="cursor:default">
+                                <div class="card-body"
+                                    style="display:flex;align-items:center;gap:14px;padding:16px 18px">
+                                    <div class="avatar avatar-md"
+                                        style="background:linear-gradient(135deg,#3ecf8e,#127a51)">SR</div>
+                                    <div style="flex:1">
+                                        <div style="font-weight:600;font-size:.9rem">Shadman Rahman</div>
+                                        <div class="text-muted text-xs" style="margin-top:2px">ID: 2304045 · DSA, C++,
+                                            Competitive Prog.</div>
+                                    </div>
+                                    <span class="badge badge-blue">Match 82%</span>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="showToast('Connection request sent to Shadman!','success')">Connect</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Events -->
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Your Upcoming Events</div>
+                                <div class="section-sub">Next 14 days</div>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="showPage('events')">View all</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:12px">
+                            <div class="card event-card" style="cursor:default">
+                                <div class="event-date-box">
+                                    <div class="event-day">06</div>
+                                    <div class="event-mon">May</div>
+                                </div>
+                                <div class="event-body">
+                                    <div class="event-title">Intra CUET ML Contest 2.0 — Kickoff</div>
+                                    <div class="event-meta"><span>🏛️ Online · Kaggle</span><span>⏰ 11:00 AM</span>
+                                    </div>
+                                    <span class="badge badge-green">Registered</span>
+                                </div>
+                            </div>
+                            <div class="card event-card" style="cursor:default">
+                                <div class="event-date-box">
+                                    <div class="event-day">12</div>
+                                    <div class="event-mon">May</div>
+                                </div>
+                                <div class="event-body">
+                                    <div class="event-title">Algorithm Design Workshop</div>
+                                    <div class="event-meta"><span>🏛️ Room 301, CSE Bldg</span><span>⏰ 2:00 PM</span>
+                                    </div>
+                                    <span class="badge badge-blue">Interested</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="sticky-top">
+                        <!-- Activity Feed -->
+                        <div class="card" style="margin-bottom:18px;cursor:default">
+                            <div class="card-body">
+                                <div class="section-title" style="margin-bottom:16px;font-size:1rem">Recent Activity
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-dot" style="background:var(--success)"></div>
+                                    <div>
+                                        <div class="activity-text">Your project <strong>CampusForge</strong> received a
+                                            ⭐ 4.8 rating</div>
+                                        <div class="activity-time">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-dot" style="background:var(--info)"></div>
+                                    <div>
+                                        <div class="activity-text">Ashikul Islam viewed your profile</div>
+                                        <div class="activity-time">5 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-dot" style="background:var(--gold)"></div>
+                                    <div>
+                                        <div class="activity-text">You joined <strong>CUET CS Club</strong></div>
+                                        <div class="activity-time">Yesterday</div>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-dot" style="background:var(--text-muted)"></div>
+                                    <div>
+                                        <div class="activity-text">Profile view from <strong>Jawad</strong></div>
+                                        <div class="activity-time">2 days ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trending skills mini -->
+                        <div class="card" style="cursor:default">
+                            <div class="card-body">
+                                <div class="section-title" style="margin-bottom:14px;font-size:1rem">🔥 Hot Skills This
+                                    Week</div>
+                                <div style="display:flex;flex-direction:column;gap:10px">
+                                    <div style="display:flex;align-items:center;justify-content:space-between">
+                                        <span class="text-sm">Machine Learning</span><span
+                                            class="badge badge-gold">+34%</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between">
+                                        <span class="text-sm">React.js</span><span class="badge badge-blue">+21%</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between">
+                                        <span class="text-sm">C++ / DSA</span><span
+                                            class="badge badge-green">+18%</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between">
+                                        <span class="text-sm">PostgreSQL</span><span
+                                            class="badge badge-blue">+14%</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-ghost btn-sm w-full mt-3" onclick="showPage('trending')">Full
+                                    Trend Report →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: STUDENTS
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-students">
+            <div class="container skill-page-wrap">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Student Directory</div>
+                        <div class="section-sub">312 students · Filter by skill to find collaborators</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('modalAddSkill')">+ Add My Skills</button>
+                </div>
+
+                <!-- Filters -->
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px">
+                    <div class="search-bar" style="flex:1;min-width:220px">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Search by name, ID or skill..."
+                            oninput="filterStudents(this.value)">
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap" id="skillFilters">
+                        <span class="tag active" onclick="toggleFilter(this)">All</span>
+                        <span class="tag" onclick="toggleFilter(this)">Machine Learning</span>
+                        <span class="tag" onclick="toggleFilter(this)">React</span>
+                        <span class="tag" onclick="toggleFilter(this)">C++</span>
+                        <span class="tag" onclick="toggleFilter(this)">Python</span>
+                        <span class="tag" onclick="toggleFilter(this)">DSA</span>
+                        <span class="tag" onclick="toggleFilter(this)">Node.js</span>
+                    </div>
+                </div>
+
+                <div class="grid-3" id="studentGrid">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: PROJECTS
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-projects">
+            <div class="container" style="padding-top:32px;padding-bottom:60px">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Project Showcase</div>
+                        <div class="section-sub">84 projects · Rate, learn, and get inspired</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('modalAddProject')">+ Submit
+                        Project</button>
+                </div>
+
+                <!-- Filter tabs -->
+                <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap">
+                    <button class="btn btn-secondary btn-sm"
+                        onclick="showToast('Showing all projects','info')">All</button>
+                    <button class="btn btn-ghost btn-sm"
+                        onclick="showToast('Filtered: Web Projects','info')">Web</button>
+                    <button class="btn btn-ghost btn-sm" onclick="showToast('Filtered: AI/ML Projects','info')">AI /
+                        ML</button>
+                    <button class="btn btn-ghost btn-sm" onclick="showToast('Filtered: Mobile','info')">Mobile</button>
+                    <button class="btn btn-ghost btn-sm"
+                        onclick="showToast('Filtered: Embedded','info')">Embedded</button>
+                    <button class="btn btn-ghost btn-sm" onclick="showToast('Showing highest rated first','info')">⭐ Top
+                        Rated</button>
+                </div>
+
+                <div class="grid-3" id="projectGrid">
+                    <!-- injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: EVENTS
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-events">
+            <div class="container" style="padding-top:32px;padding-bottom:60px">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Event Hub</div>
+                        <div class="section-sub">27 events this month · Personalized for your interests</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('modalAddEvent')">+ Post Event</button>
+                </div>
+
+                <div class="grid-21">
+                    <div style="display:flex;flex-direction:column;gap:14px" id="eventsList">
+                        <!-- injected by JS -->
+                    </div>
+                    <div class="sticky-top">
+                        <div class="card" style="cursor:default;margin-bottom:16px">
+                            <div class="card-body">
+                                <div class="section-title" style="font-size:1rem;margin-bottom:12px">🎯 Recommended for
+                                    You</div>
+                                <div class="text-sm text-muted" style="line-height:1.7">Based on your skills in <span
+                                        class="text-gold">C++, DSA, Machine Learning</span>, we think you'd enjoy these
+                                    events.</div>
+                            </div>
+                        </div>
+                        <div class="card" style="cursor:default">
+                            <div class="card-body">
+                                <div class="section-title" style="font-size:1rem;margin-bottom:14px">Categories</div>
+                                <div style="display:flex;flex-direction:column;gap:8px">
+                                    <div style="display:flex;justify-content:space-between;align-items:center">
+                                        <span class="text-sm">🏆 Competitions</span><span
+                                            class="badge badge-gold">8</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center">
+                                        <span class="text-sm">🎓 Workshops</span><span
+                                            class="badge badge-blue">11</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center">
+                                        <span class="text-sm">🗣️ Seminars</span><span
+                                            class="badge badge-green">5</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center">
+                                        <span class="text-sm">🎉 Social</span><span class="badge badge-red">3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: CLUBS
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-clubs">
+            <div class="container" style="padding-top:32px;padding-bottom:60px">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Campus Clubs</div>
+                        <div class="section-sub">11 active clubs · Join, contribute, lead</div>
+                    </div>
+                </div>
+                <div class="grid-3" id="clubGrid">
+                    <!-- injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: PROFILE
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-profile">
+            <div class="container" style="padding-top:32px;padding-bottom:60px">
+                <div class="profile-header">
+                    <div class="profile-top">
+                        <div class="avatar avatar-xl"
+                            style="background:linear-gradient(135deg,var(--gold) 0%,#7a4b10 100%)">NS</div>
+                        <div style="flex:1">
+                            <div class="profile-name">Nabil Bin Sayed</div>
+                            <div class="profile-info">ID: 2304018 · CSE, Batch 2023 · Level 2 Term 2</div>
+                            <div class="profile-info mt-1">📍 CUET, Chattogram · 🌐 github.com/nabilbsayed</div>
+                            <div class="profile-bio">CSE undergraduate passionate about algorithms, ML, and building
+                                tools that actually solve problems. Currently focused on DSA, algorithm design, and
+                                competing in my first ML contest.</div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="openModal('modalEditProfile')">✏️ Edit
+                            Profile</button>
+                    </div>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <div class="profile-stat-num">7</div>
+                            <div class="profile-stat-lbl">Skills</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-num">3</div>
+                            <div class="profile-stat-lbl">Projects</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-num">4.7</div>
+                            <div class="profile-stat-lbl">Avg Rating</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-num">14</div>
+                            <div class="profile-stat-lbl">Connections</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-num">2</div>
+                            <div class="profile-stat-lbl">Clubs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-12">
+                    <!-- LEFT: Skills + Projects -->
+                    <div>
+                        <div class="card" style="margin-bottom:18px;cursor:default">
+                            <div class="card-body">
+                                <div
+                                    style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                                    <div class="section-title" style="font-size:1rem">My Skills</div>
+                                    <button class="btn btn-secondary btn-sm" onclick="openModal('modalAddSkill')">+
+                                        Add</button>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">C++ / DSA</span><span
+                                            class="skill-level-pct">85%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:85%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">Python</span><span
+                                            class="skill-level-pct">78%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:78%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">Machine
+                                            Learning</span><span class="skill-level-pct">55%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:55%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">React.js</span><span
+                                            class="skill-level-pct">70%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:70%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">HTML / CSS /
+                                            SCSS</span><span class="skill-level-pct">90%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:90%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-level">
+                                    <div class="skill-level-top"><span class="skill-level-name">LaTeX</span><span
+                                            class="skill-level-pct">65%</span></div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width:65%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="cursor:default">
+                            <div class="card-body">
+                                <div class="section-title" style="font-size:1rem;margin-bottom:16px">Club Memberships
+                                </div>
+                                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                                    <div
+                                        style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+                                        <span style="font-size:1.4rem">💻</span>
+                                        <div>
+                                            <div style="font-weight:600;font-size:.85rem">CUET CS Club</div>
+                                            <div class="text-xs text-muted">Member</div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+                                        <span style="font-size:1.4rem">🤖</span>
+                                        <div>
+                                            <div style="font-weight:600;font-size:.85rem">AI/ML Society</div>
+                                            <div class="text-xs text-muted">Member</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Projects -->
+                    <div>
+                        <div class="section-title" style="margin-bottom:16px">My Projects</div>
+                        <div style="display:flex;flex-direction:column;gap:14px">
+                            <div class="card" style="cursor:default">
+                                <div
+                                    style="height:80px;background:linear-gradient(135deg,rgba(201,151,58,0.15),rgba(201,151,58,0.05));display:flex;align-items:center;justify-content:center;font-size:2rem">
+                                    ⚙️</div>
+                                <div class="card-body">
+                                    <div class="project-title">CampusForge</div>
+                                    <div class="project-desc">Academic skill & collaboration platform for CUET CSE.
+                                        Full-stack web app with skill matching, project showcase, event management, and
+                                        club directory.</div>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                                        <span class="tag active">React</span><span
+                                            class="tag active">Node.js</span><span class="tag active">PostgreSQL</span>
+                                    </div>
+                                    <div class="project-meta">
+                                        <div class="stars">★★★★★</div>
+                                        <span class="text-xs text-muted">4.8 · 12 ratings</span>
+                                        <span class="badge badge-green">Ongoing</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card" style="cursor:default">
+                                <div
+                                    style="height:80px;background:linear-gradient(135deg,rgba(76,163,221,0.15),rgba(76,163,221,0.05));display:flex;align-items:center;justify-content:center;font-size:2rem">
+                                    📊</div>
+                                <div class="card-body">
+                                    <div class="project-title">DSA Documentation Site</div>
+                                    <div class="project-desc">Obsidian/Quartz-based DSA blog covering algorithms, data
+                                        structures, and complexity with CLRS-style content.</div>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                                        <span class="tag active">Markdown</span><span
+                                            class="tag active">Quartz</span><span class="tag active">C++</span>
+                                    </div>
+                                    <div class="project-meta">
+                                        <div class="stars">★★★★☆</div>
+                                        <span class="text-xs text-muted">4.5 · 8 ratings</span>
+                                        <span class="badge badge-blue">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+     PAGE: TRENDING
+══════════════════════════════════════════════ -->
+        <div class="page" id="page-trending">
+            <div class="container" style="padding-top:32px;padding-bottom:60px">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Skill Trends Dashboard</div>
+                        <div class="section-sub">Real-time insights into what students are learning and showcasing</div>
+                    </div>
+                    <span class="badge badge-green">Live · May 2026</span>
+                </div>
+
+                <div class="grid-2" style="margin-bottom:24px">
+                    <div class="card" style="cursor:default">
+                        <div class="card-body">
+                            <div class="section-title" style="font-size:1rem;margin-bottom:18px">🔥 Top Skills by
+                                Popularity</div>
+                            <div id="trendList"><!-- injected --></div>
+                        </div>
+                    </div>
+                    <div class="card" style="cursor:default">
+                        <div class="card-body">
+                            <div class="section-title" style="font-size:1rem;margin-bottom:18px">📈 Fastest Growing
+                                Skills</div>
+                            <div id="growthList"><!-- injected --></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card" style="cursor:default">
+                        <div class="card-body" style="text-align:center;padding:28px 20px">
+                            <div style="font-size:2.2rem;margin-bottom:8px">🤖</div>
+                            <div class="stat-num"
+                                style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--gold-light)">
+                                68%</div>
+                            <div class="stat-lbl text-muted text-sm" style="margin-top:4px">students learning AI/ML
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="cursor:default">
+                        <div class="card-body" style="text-align:center;padding:28px 20px">
+                            <div style="font-size:2.2rem;margin-bottom:8px">💻</div>
+                            <div class="stat-num"
+                                style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--gold-light)">
+                                84</div>
+                            <div class="stat-lbl text-muted text-sm" style="margin-top:4px">projects submitted this
+                                semester</div>
+                        </div>
+                    </div>
+                    <div class="card" style="cursor:default">
+                        <div class="card-body" style="text-align:center;padding:28px 20px">
+                            <div style="font-size:2.2rem;margin-bottom:8px">🤝</div>
+                            <div class="stat-num"
+                                style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--gold-light)">
+                                127</div>
+                            <div class="stat-lbl text-muted text-sm" style="margin-top:4px">collaboration requests this
+                                month</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /main -->
+
+    <!-- ══════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════ -->
+
+    <!-- Register -->
+    <div class="modal-overlay" id="modalRegister">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Create Your CampusForge Account</div>
+                <button class="modal-close" onclick="closeModal('modalRegister')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-2">
+                    <div class="form-group"><label class="form-label">Full Name</label><input class="form-control"
+                            placeholder="e.g. Nabil Bin Sayed"></div>
+                    <div class="form-group"><label class="form-label">Student ID</label><input class="form-control"
+                            placeholder="e.g. 2304018"></div>
+                </div>
+                <div class="form-group"><label class="form-label">CUET Email</label><input class="form-control"
+                        placeholder="student@cuet.ac.bd"></div>
+                <div class="form-group"><label class="form-label">Department</label><select class="form-control">
+                        <option>Computer Science & Engineering</option>
+                        <option>Electrical & Electronic Engineering</option>
+                        <option>Mechanical Engineering</option>
+                        <option>Civil Engineering</option>
+                    </select></div>
+                <div class="form-group"><label class="form-label">Batch / Session</label><input class="form-control"
+                        placeholder="e.g. 2023-2024"></div>
+                <div class="form-group"><label class="form-label">Password</label><input class="form-control"
+                        type="password" placeholder="Create a strong password"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalRegister')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalRegister');showToast('Account created! Welcome to CampusForge 🎉','success')">Create
+                    Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Skill -->
+    <div class="modal-overlay" id="modalAddSkill">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add a Skill</div>
+                <button class="modal-close" onclick="closeModal('modalAddSkill')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label class="form-label">Skill Name</label><input class="form-control"
+                        placeholder="e.g. Machine Learning"></div>
+                <div class="form-group"><label class="form-label">Proficiency Level</label><select class="form-control">
+                        <option>Beginner</option>
+                        <option>Intermediate</option>
+                        <option>Advanced</option>
+                        <option>Expert</option>
+                    </select></div>
+                <div class="form-group"><label class="form-label">Category</label><select class="form-control">
+                        <option>Programming</option>
+                        <option>Web Development</option>
+                        <option>AI / ML</option>
+                        <option>Embedded Systems</option>
+                        <option>Design</option>
+                        <option>Other</option>
+                    </select></div>
+                <div class="form-group"><label class="form-label">Brief Description (optional)</label><textarea
+                        class="form-control" rows="2"
+                        placeholder="How did you learn this? What have you built with it?"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalAddSkill')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalAddSkill');showToast('Skill added to your profile ✅','success')">Add
+                    Skill</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Project -->
+    <div class="modal-overlay" id="modalAddProject">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Submit a Project</div>
+                <button class="modal-close" onclick="closeModal('modalAddProject')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label class="form-label">Project Title</label><input class="form-control"
+                        placeholder="Give your project a clear name"></div>
+                <div class="form-group"><label class="form-label">Description</label><textarea class="form-control"
+                        rows="3" placeholder="What does it do? What problem does it solve?"></textarea></div>
+                <div class="form-group"><label class="form-label">Category</label><select class="form-control">
+                        <option>Web Development</option>
+                        <option>AI / ML</option>
+                        <option>Mobile</option>
+                        <option>Embedded</option>
+                        <option>Tool / Library</option>
+                        <option>Other</option>
+                    </select></div>
+                <div class="form-group"><label class="form-label">Tech Stack (comma-separated)</label><input
+                        class="form-control" placeholder="e.g. React, Node.js, PostgreSQL"></div>
+                <div class="form-group"><label class="form-label">GitHub / Live Link</label><input class="form-control"
+                        placeholder="https://github.com/..."></div>
+                <div class="form-group"><label class="form-label">Status</label><select class="form-control">
+                        <option>Ongoing</option>
+                        <option>Completed</option>
+                        <option>Looking for collaborators</option>
+                    </select></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalAddProject')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalAddProject');showToast('Project submitted for review ✅','success')">Submit
+                    Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Event -->
+    <div class="modal-overlay" id="modalAddEvent">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Post an Event</div>
+                <button class="modal-close" onclick="closeModal('modalAddEvent')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label class="form-label">Event Title</label><input class="form-control"
+                        placeholder="e.g. Web Dev Workshop"></div>
+                <div class="form-group"><label class="form-label">Description</label><textarea class="form-control"
+                        rows="2" placeholder="What's the event about?"></textarea></div>
+                <div class="grid-2">
+                    <div class="form-group"><label class="form-label">Date</label><input class="form-control"
+                            type="date"></div>
+                    <div class="form-group"><label class="form-label">Time</label><input class="form-control"
+                            type="time"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Venue</label><input class="form-control"
+                        placeholder="e.g. Room 301, CSE Building"></div>
+                <div class="form-group"><label class="form-label">Type</label><select class="form-control">
+                        <option>Workshop</option>
+                        <option>Seminar</option>
+                        <option>Competition</option>
+                        <option>Social</option>
+                    </select></div>
+                <div class="form-group"><label class="form-label">Relevant Skills (for matching)</label><input
+                        class="form-control" placeholder="e.g. Python, ML, Web"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalAddEvent')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalAddEvent');showToast('Event posted successfully 📅','success')">Post
+                    Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile -->
+    <div class="modal-overlay" id="modalEditProfile">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Edit Profile</div>
+                <button class="modal-close" onclick="closeModal('modalEditProfile')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control"
+                        rows="3">CSE undergraduate passionate about algorithms, ML, and building tools that actually solve problems.</textarea>
+                </div>
+                <div class="form-group"><label class="form-label">GitHub URL</label><input class="form-control"
+                        value="github.com/nabilbsayed"></div>
+                <div class="form-group"><label class="form-label">LinkedIn URL</label><input class="form-control"
+                        placeholder="linkedin.com/in/..."></div>
+                <div class="form-group"><label class="form-label">Personal Website</label><input class="form-control"
+                        placeholder="https://..."></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalEditProfile')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalEditProfile');showToast('Profile updated ✅','success')">Save
+                    Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Project Modal -->
+    <div class="modal-overlay" id="modalRateProject">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Rate this Project</div>
+                <button class="modal-close" onclick="closeModal('modalRateProject')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;margin-bottom:20px">
+                    <div class="section-title" style="margin-bottom:8px" id="rateProjectTitle">Project Title</div>
+                    <div style="font-size:2.2rem;letter-spacing:8px;cursor:pointer" id="starSelector">
+                        <span onclick="setRating(1)">★</span><span onclick="setRating(2)">★</span><span
+                            onclick="setRating(3)">★</span><span onclick="setRating(4)">★</span><span
+                            onclick="setRating(5)">★</span>
+                    </div>
+                    <div class="text-sm text-muted mt-1" id="ratingLabel">Click to rate</div>
+                </div>
+                <div class="form-group"><label class="form-label">Review (optional)</label><textarea
+                        class="form-control" rows="3"
+                        placeholder="Share what you liked or what could be improved..."></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalRateProject')">Cancel</button>
+                <button class="btn btn-primary"
+                    onclick="closeModal('modalRateProject');showToast('Rating submitted — thanks! ⭐','success')">Submit
+                    Rating</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <script>
+        // ── DATA ──
+        const STUDENTS = [
+            { name: 'Ashikul Islam', id: '2304001', skills: ['React', 'Node.js', 'Firebase', 'HTML/CSS'], dept: 'CSE', rating: 4.9, color: 'linear-gradient(135deg,#4ca3dd,#1a5f8b)', initials: 'AI', projects: 5, connections: 23 },
+            { name: 'Nabil Bin Sayed', id: '2304018', skills: ['C++', 'DSA', 'Python', 'ML', 'React'], dept: 'CSE', rating: 4.7, color: 'linear-gradient(135deg,#c9973a,#7a4b10)', initials: 'NS', projects: 3, connections: 14 },
+            { name: 'Abrar Jawad', id: '2304030', skills: ['ML', 'Python', 'Data Analysis', 'Scikit-learn'], dept: 'CSE', rating: 4.8, color: 'linear-gradient(135deg,#c9973a,#8b5e1f)', initials: 'MJ', projects: 4, connections: 19 },
+            { name: 'Shadman Rahman', id: '2304045', skills: ['DSA', 'C++', 'Competitive Prog', 'Codeforces'], dept: 'CSE', rating: 4.6, color: 'linear-gradient(135deg,#3ecf8e,#127a51)', initials: 'SR', projects: 2, connections: 18 },
+            { name: 'Tasnia Ferdaus', id: '2304011', skills: ['Python', 'Django', 'SQL', 'REST API'], dept: 'CSE', rating: 4.5, color: 'linear-gradient(135deg,#e05c5c,#8b2020)', initials: 'TF', projects: 3, connections: 11 },
+            { name: 'Raihan Kabir', id: '2304022', skills: ['Android', 'Java', 'Kotlin', 'Firebase'], dept: 'CSE', rating: 4.4, color: 'linear-gradient(135deg,#9b59b6,#5b2e8e)', initials: 'RK', projects: 4, connections: 16 },
+            { name: 'Mariam Khatun', id: '2304033', skills: ['UI/UX', 'Figma', 'HTML/CSS', 'React'], dept: 'CSE', rating: 4.7, color: 'linear-gradient(135deg,#e67e22,#9c4a00)', initials: 'MK', projects: 2, connections: 20 },
+            { name: 'Faisal Ahmed', id: '2304057', skills: ['Embedded', 'Arduino', 'C', 'RTOS'], dept: 'CSE', rating: 4.3, color: 'linear-gradient(135deg,#1abc9c,#0d7a63)', initials: 'FA', projects: 3, connections: 9 },
+            { name: 'Nusrat Jahan', id: '2304064', skills: ['LaTeX', 'Research', 'Python', 'Statistics'], dept: 'CSE', rating: 4.6, color: 'linear-gradient(135deg,#f39c12,#9a6100)', initials: 'NJ', projects: 1, connections: 12 },
+        ];
+
+        const PROJECTS = [
+            { title: 'CampusForge', desc: 'Academic skill & collaboration platform for CUET — full stack with skill matching, events, clubs.', emoji: '⚙️', bg: 'rgba(201,151,58,0.12)', tags: ['React', 'Node.js', 'PostgreSQL'], author: 'NS', rating: 4.8, votes: 12, status: 'Ongoing' },
+            { title: 'SmartAttend', desc: 'Automated class attendance via face recognition, integrated with CUET student records.', emoji: '📷', bg: 'rgba(76,163,221,0.12)', tags: ['Python', 'OpenCV', 'Flask'], author: 'AI', rating: 4.7, votes: 9, status: 'Completed' },
+            { title: 'RideShare CUET', desc: 'Carpooling platform for CUET students — route matching, cost splitting, driver/rider ratings.', emoji: '🚗', bg: 'rgba(62,207,142,0.12)', tags: ['React Native', 'Node.js'], author: 'RK', rating: 4.5, votes: 7, status: 'Looking for collaborators' },
+            { title: 'BudgetBuddy', desc: 'Personal finance tracker designed for students — tracks mess bills, transport, and study expenses.', emoji: '💰', bg: 'rgba(224,92,92,0.12)', tags: ['Flutter', 'Firebase'], author: 'TF', rating: 4.3, votes: 5, status: 'Completed' },
+            { title: 'CUET Exam Scheduler', desc: 'Automated conflict-free exam timetable generator using constraint satisfaction for CUET.', emoji: '📅', bg: 'rgba(155,89,182,0.12)', tags: ['Python', 'OR-Tools', 'React'], author: 'NJ', rating: 4.6, votes: 11, status: 'Completed' },
+            { title: 'PeerLearn', desc: 'Peer tutoring marketplace — students post what they can teach, others request sessions.', emoji: '📚', bg: 'rgba(230,126,34,0.12)', tags: ['Vue.js', 'Django', 'SQLite'], author: 'MK', rating: 4.4, votes: 6, status: 'Ongoing' },
+        ];
+
+        const EVENTS = [
+            { day: '06', mon: 'May', title: 'Intra CUET ML Contest 2.0 — Kickoff', venue: 'Online · Kaggle Platform', time: '11:00 AM', type: 'Competition', tags: ['ML', 'Python', 'Data Science'], spots: 80, registered: true },
+            { day: '12', mon: 'May', title: 'Algorithm Design Workshop', venue: 'Room 301, CSE Building', time: '2:00 PM', type: 'Workshop', tags: ['DSA', 'Algorithms'], spots: 40, registered: false },
+            { day: '15', mon: 'May', title: 'Full Stack Web Dev Bootcamp', venue: 'CSE Lab 2', time: '10:00 AM', type: 'Workshop', tags: ['React', 'Node.js'], spots: 30, registered: false },
+            { day: '20', mon: 'May', title: 'Research Paper Writing Seminar', venue: 'CSE Seminar Hall', time: '3:00 PM', type: 'Seminar', tags: ['Research', 'LaTeX'], spots: 60, registered: false },
+            { day: '25', mon: 'May', title: 'Competitive Programming Contest', venue: 'CSE Lab 1', time: '9:00 AM', type: 'Competition', tags: ['C++', 'DSA', 'CP'], spots: 50, registered: false },
+            { day: '31', mon: 'May', title: 'ML Contest 2.0 — Final Submission', venue: 'Online · Kaggle', time: '11:59 PM', type: 'Competition', tags: ['ML', 'Kaggle'], spots: 80, registered: true },
+        ];
+
+        const CLUBS = [
+            { icon: '💻', name: 'CUET CS Club', desc: 'The flagship CS club covering programming contests, tech talks, and project exhibitions.', members: 142, events: 18, joined: true },
+            { icon: '🤖', name: 'AI / ML Society', desc: 'Focused on machine learning, deep learning, and AI research. Runs study groups and paper readings.', members: 87, events: 11, joined: true },
+            { icon: '🌐', name: 'Web Dev Circle', desc: 'Building real-world web applications, hosting hackathons, and open source contributions.', members: 64, events: 9, joined: false },
+            { icon: '📡', name: 'IEEE CUET Student Branch', desc: 'Professional engineering society chapter with seminars, workshops, and international exposure.', members: 120, events: 14, joined: false },
+            { icon: '🎮', name: 'Game Dev Guild', desc: 'From 2D to 3D — learning Unity, Godot, and game design fundamentals through collaborative projects.', members: 43, events: 6, joined: false },
+            { icon: '🔐', name: 'Cybersecurity Club', desc: 'Ethical hacking, CTF competitions, network security, and digital forensics.', members: 51, events: 8, joined: false },
+        ];
+
+        const TRENDS = [
+            { name: 'Machine Learning', count: 204, pct: 100 },
+            { name: 'React.js', count: 189, pct: 93 },
+            { name: 'C++ / DSA', count: 176, pct: 86 },
+            { name: 'Python', count: 168, pct: 82 },
+            { name: 'PostgreSQL / SQL', count: 134, pct: 66 },
+            { name: 'Node.js', count: 112, pct: 55 },
+            { name: 'Kotlin / Android', count: 98, pct: 48 },
+            { name: 'Figma / UI/UX', count: 87, pct: 43 },
+        ];
+
+        const GROWTH = [
+            { name: 'Machine Learning', pct: 34, badge: 'badge-gold' },
+            { name: 'PostgreSQL', pct: 27, badge: 'badge-blue' },
+            { name: 'Rust', pct: 22, badge: 'badge-green' },
+            { name: 'Flutter', pct: 19, badge: 'badge-blue' },
+            { name: 'Docker', pct: 15, badge: 'badge-green' },
+            { name: 'Next.js', pct: 13, badge: 'badge-blue' },
+        ];
+
+        const AVATAR_COLORS = {
+            NS: 'linear-gradient(135deg,#c9973a,#7a4b10)',
+            AI: 'linear-gradient(135deg,#4ca3dd,#1a5f8b)',
+            MJ: 'linear-gradient(135deg,#c9973a,#8b5e1f)',
+            SR: 'linear-gradient(135deg,#3ecf8e,#127a51)',
+            TF: 'linear-gradient(135deg,#e05c5c,#8b2020)',
+            RK: 'linear-gradient(135deg,#9b59b6,#5b2e8e)',
+            MK: 'linear-gradient(135deg,#e67e22,#9c4a00)',
+            FA: 'linear-gradient(135deg,#1abc9c,#0d7a63)',
+            NJ: 'linear-gradient(135deg,#f39c12,#9a6100)',
+        };
+
+        // ── RENDER ──
+        function renderStudents(list) {
+            const g = document.getElementById('studentGrid');
+            g.innerHTML = list.map(s => `
+    <div class="card skill-card">
+      <div class="skill-card-top">
+        <div class="avatar avatar-md" style="background:${s.color}">${s.initials}</div>
+        <div>
+          <div class="student-name">${s.name}</div>
+          <div class="student-id">ID: ${s.id} · ${s.dept}</div>
+        </div>
+        <div style="margin-left:auto"><div class="stars">★</div><div class="text-xs text-muted">${s.rating}</div></div>
+      </div>
+      <div class="skill-tags">${s.skills.map(sk => `<span class="tag active">${sk}</span>`).join('')}</div>
+      <div class="skill-card-footer">
+        <span class="text-xs text-muted">${s.projects} projects · ${s.connections} connections</span>
+        <button class="btn btn-secondary btn-sm" onclick="showToast('Connection request sent!','success')">Connect</button>
+      </div>
+    </div>
+  `).join('');
+        }
+
+        function renderProjects() {
+            document.getElementById('projectGrid').innerHTML = PROJECTS.map((p, i) => `
+    <div class="card" style="cursor:default">
+      <div class="project-card-img" style="background:${p.bg}">${p.emoji}</div>
+      <div class="project-card-body">
+        <div class="project-title">${p.title}</div>
+        <div class="project-desc">${p.desc}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">${p.tags.map(t => `<span class="tag active">${t}</span>`).join('')}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5 - Math.round(p.rating))}</div>
+            <div class="text-xs text-muted">${p.rating} · ${p.votes} ratings</div>
+          </div>
+          <span class="badge ${p.status === 'Completed' ? 'badge-green' : p.status === 'Ongoing' ? 'badge-blue' : 'badge-gold'}">${p.status}</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="rateProject('${p.title}')">⭐ Rate</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Opening ${p.title} details...','info')">View</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+        }
+
+        function renderEvents() {
+            document.getElementById('eventsList').innerHTML = EVENTS.map(e => `
+    <div class="card event-card" style="cursor:default">
+      <div class="event-date-box"><div class="event-day">${e.day}</div><div class="event-mon">${e.mon}</div></div>
+      <div class="event-body">
+        <div class="event-title">${e.title}</div>
+        <div class="event-meta">
+          <span>📍 ${e.venue}</span>
+          <span>⏰ ${e.time}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <span class="badge ${e.type === 'Competition' ? 'badge-gold' : e.type === 'Workshop' ? 'badge-blue' : 'badge-green'}">${e.type}</span>
+          ${e.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+        <div class="event-footer">
+          <span class="text-xs text-muted">${e.spots} spots</span>
+          ${e.registered
+                    ? `<span class="badge badge-green">✓ Registered</span>`
+                    : `<button class="btn btn-primary btn-sm" onclick="registerEvent(this,'${e.title}')">Register</button>`}
+        </div>
+      </div>
+    </div>
+  `).join('');
+        }
+
+        function renderClubs() {
+            document.getElementById('clubGrid').innerHTML = CLUBS.map(c => `
+    <div class="card club-card" style="cursor:default">
+      <div class="club-icon">${c.icon}</div>
+      <div class="club-name">${c.name}</div>
+      <div class="club-desc">${c.desc}</div>
+      <div class="club-meta"><span>👥 ${c.members}</span><span>📅 ${c.events} events</span></div>
+      ${c.joined
+                    ? `<button class="btn btn-ghost btn-sm w-full" onclick="showToast('You are already a member of ${c.name}','info')">✓ Joined</button>`
+                    : `<button class="btn btn-primary btn-sm w-full" onclick="joinClub(this,'${c.name}')">Join Club</button>`}
+    </div>
+  `).join('');
+        }
+
+        function renderTrends() {
+            document.getElementById('trendList').innerHTML = TRENDS.map((t, i) => `
+    <div class="trend-row">
+      <div class="trend-rank ${i < 3 ? 'top' : ''}">${i + 1}</div>
+      <div class="trend-bar-wrap">
+        <div class="trend-skill-name">${t.name}</div>
+        <div class="progress-bar" style="margin-bottom:4px"><div class="progress-fill" style="width:${t.pct}%"></div></div>
+        <div class="trend-count">${t.count} students</div>
+      </div>
+    </div>
+  `).join('');
+
+            document.getElementById('growthList').innerHTML = GROWTH.map(g => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <span class="text-sm fw-600">${g.name}</span>
+      <span class="badge ${g.badge}">+${g.pct}%</span>
+    </div>
+  `).join('');
+        }
+
+        // ── INTERACTIONS ──
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(l => {
+                l.classList.toggle('active', l.dataset.page === id);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (id === 'students') renderStudents(STUDENTS);
+            if (id === 'projects') renderProjects();
+            if (id === 'events') renderEvents();
+            if (id === 'clubs') renderClubs();
+            if (id === 'trending') renderTrends();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        // Close on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+        });
+
+        let toastTimer;
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'show ' + type;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.className = ''; }, 3200);
+        }
+
+        function filterStudents(q) {
+            const filtered = STUDENTS.filter(s =>
+                s.name.toLowerCase().includes(q.toLowerCase()) ||
+                s.id.includes(q) ||
+                s.skills.some(sk => sk.toLowerCase().includes(q.toLowerCase()))
+            );
+            renderStudents(filtered);
+        }
+
+        function toggleFilter(el) {
+            document.querySelectorAll('#skillFilters .tag').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            const f = el.textContent.trim();
+            if (f === 'All') { renderStudents(STUDENTS); return; }
+            renderStudents(STUDENTS.filter(s => s.skills.some(sk => sk.toLowerCase().includes(f.toLowerCase()))));
+        }
+
+        function registerEvent(btn, title) {
+            btn.outerHTML = `<span class="badge badge-green">✓ Registered</span>`;
+            showToast(`Registered for "${title}" ✅`, 'success');
+        }
+
+        function joinClub(btn, name) {
+            btn.outerHTML = `<button class="btn btn-ghost btn-sm w-full">✓ Joined</button>`;
+            showToast(`You joined ${name} 🎉`, 'success');
+        }
+
+        let currentRating = 0;
+        function rateProject(title) {
+            document.getElementById('rateProjectTitle').textContent = title;
+            currentRating = 0;
+            updateStars(0);
+            openModal('modalRateProject');
+        }
+
+        function setRating(n) {
+            currentRating = n;
+            updateStars(n);
+            const labels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            document.getElementById('ratingLabel').textContent = labels[n];
+        }
+
+        function updateStars(n) {
+            const stars = document.querySelectorAll('#starSelector span');
+            stars.forEach((s, i) => { s.style.color = i < n ? 'var(--gold)' : 'var(--text-muted)'; });
+        }
+
+        // Init
+        showPage('landing');
+    </script>
+</body>
+
+</html>
