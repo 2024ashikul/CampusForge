@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PostCard } from './ClubPostComponent';
-import type { AdvancedPost } from './Posts/PostInterfaces';
+import type { AdvancedPost } from '../interfaces/post.type';
 import { FileText, Image as ImageIcon, Video, Link as LinkIcon, Layers, Cpu, Sparkles } from 'lucide-react';
 
 // --- SHOWCASE DUMMY MOCK VALUES ---

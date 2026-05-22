@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PostForm } from './PostForm';
 import { PostCard } from './PostCard';
-import type { PostData, PostAttachment } from './PostInterfaces';
+import type { PostData, PostAttachment } from '../../interfaces/post.type';
 
 export const PostFeedShowcase: React.FC = () => {
   const [posts, setPosts] = useState<PostData[]>([]);

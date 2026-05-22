@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Users, FileText, MapPin, Award, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 // --- MOCK API DATA STRUCTURES ---
-interface ClubDetails {
+interface Club {
   name: string;
   tagline: string;
   description: string;
@@ -43,7 +43,7 @@ interface Participant {
 }
 
 // --- DUMMY API VALUES ---
-const mockClubData: ClubDetails = {
+const mockClubData: Club = {
   name: "CampusForge AI & Dev Club",
   tagline: "Forging the future of software engineering and intelligent systems.",
   description: "Welcome to CampusForge! We are a community of passionate developers, builders, and designers pushing the boundaries of technology. We host weekly hack nights, technical workshops, guest lectures from industry experts, and collaborative open-source projects.",

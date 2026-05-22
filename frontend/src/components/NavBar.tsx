@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Bell, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext'; // Make sure this path correctly targets your ThemeContext file
+import { useNavigate } from 'react-router-dom';
 
 interface NavItem {
   name: string;
@@ -12,14 +13,14 @@ export const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const navItems: NavItem[] = [
-    { name: 'Dashboard', href: '#dashboard' },
-    { name: 'Students', href: '#students' },
-    { name: 'Projects', href: '#projects' },
-    { name: 'Events', href: '#events' },
-    { name: 'Clubs', href: '#clubs' },
-    { name: 'Trending', href: '#trending' },
+    { name: 'Dashboard', href: '/' },
+    { name: 'Students', href: '/students' },
+    { name: 'Projects', href: '/projects' },
+    { name: 'Events', href: '/events' },
+    { name: 'Clubs', href: '/clubs' },
+    { name: 'Chat', href: '/chat' },
   ];
-
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('Students');
 
   return (
@@ -27,7 +28,7 @@ export const Navbar: React.FC = () => {
     <nav className="w-full bg-card border-b border-customBorder px-6 py-3 flex items-center justify-between select-none transition-colors duration-200">
       
       {/* LEFT: Branding & Logo */}
-      <div className="flex items-center space-x-2 cursor-pointer group">
+      <div className="flex items-center space-x-2 cursor-pointer group" onClick={() => navigate('/')}>
         {/* REFACTORED: text-subText scales naturally */}
         <Settings className="w-6 h-6 text-subText group-hover:rotate-45 transition-transform duration-300 ease-out" />
         
@@ -40,11 +41,11 @@ export const Navbar: React.FC = () => {
       {/* CENTER: Navigation Links */}
       <div className="hidden md:flex items-center space-x-1">
         {navItems.map((item) => {
-          const isActive = activeTab === item.name;
+          const isActive = activeTab === item.href;
           return (
             <button
               key={item.name}
-              onClick={() => setActiveTab(item.name)}
+              onClick={() => navigate(item.href)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out cursor-pointer ${
                 isActive
                   ? 'bg-footer text-accent' // REFACTORED: active styling scales using tokens
@@ -83,7 +84,7 @@ export const Navbar: React.FC = () => {
         </button>
 
         {/* Profile Avatar Initials */}
-        <button className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-b from-accent to-accent/80 text-primary font-bold text-sm tracking-wide shadow-md hover:brightness-110 transition-all focus:outline-none border border-customBorder cursor-pointer">
+        <button onClick={() => navigate('/profile/1/')} className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-b from-accent to-accent/80 text-primary font-bold text-sm tracking-wide shadow-md hover:brightness-110 transition-all focus:outline-none border border-customBorder cursor-pointer">
           NS
         </button>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { act, useState } from 'react';
 import {
     Calendar, MapPin, Clock, Megaphone,
     Trophy, Sparkles, ShieldCheck, CalendarX, Eye,
@@ -12,7 +12,11 @@ import { ParticipantsTab } from "../components/Events/ParticipantsTab";
 // ==========================================
 // 1. TYPINGS & INTERFACES (TypeScript Blueprints)
 // ==========================================
-import type { Announcement , DiscussionComment, EventData} from '../interfaces/event.type';
+import type { Announcement, DiscussionComment, EventData } from '../interfaces/event.type';
+
+import {Tabs,type TabOption} from '../components/Tabs';
+
+type tabkeys = 'details' | 'announcements' | 'discussion' | 'participants' | 'results';
 
 // ==========================================
 // 2. REFRESHED MOCK COMPREHENSIVE DATA VALUE
@@ -20,7 +24,7 @@ import type { Announcement , DiscussionComment, EventData} from '../interfaces/e
 const mockRichEventData: EventData = {
     id: "evt-2026-forgehack",
     type: "competition",
-    status: "completed", 
+    status: "completed",
     title: "ForgeHack 2026: GenAI Campus Solutions",
     clubName: "CampusForge AI & Dev Club",
     date: "June 05, 2026",
@@ -59,8 +63,19 @@ export const Event: React.FC = () => {
     const [eventType, setEventType] = useState<'individual' | 'team'>('team');
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
     const [currentRole, setCurrentRole] = useState<'admin' | 'user' | 'external'>('admin');
-    const [activeTab, setActiveTab] = useState<'details' | 'announcements' | 'discussion' | 'participants' | 'results'>('results');
+    const [activeTab, setActiveTab] = useState<tabkeys>('details');
     const [eventData, setEventData] = useState<EventData>(mockRichEventData);
+
+    const tabOptions: TabOption<tabkeys>[] = [
+        { key: 'details', label: 'My Posts' },
+        { key: 'announcements', label: 'Projects' },
+        { key: 'discussion', label: 'Discussions' },
+        { key: 'participants', label: 'Participants' },
+        { key: 'results', label: 'Leaderboard' },
+    ];
+
+
+
 
     return (
         // REFACTORED: Application wrapper maps directly to your central background properties
@@ -77,11 +92,10 @@ export const Event: React.FC = () => {
                         <button
                             key={role}
                             onClick={() => setCurrentRole(role)}
-                            className={`px-3 py-1 rounded text-xs font-bold capitalize transition-all cursor-pointer ${
-                                currentRole === role
+                            className={`px-3 py-1 rounded text-xs font-bold capitalize transition-all cursor-pointer ${currentRole === role
                                     ? 'bg-accent text-primary shadow font-black'
                                     : 'bg-primary text-subText hover:text-mainText border border-customBorder'
-                            }`}
+                                }`}
                         >
                             {role === 'external' ? 'External Guest' : role === 'user' ? 'Registered Attendee' : 'System Admin'}
                         </button>
@@ -122,42 +136,12 @@ export const Event: React.FC = () => {
                     <div className="lg:col-span-2 space-y-8">
 
                         {/* COMPONENT TAB PANEL OPTIONS */}
-                        <div className="flex border-b border-customBorder space-x-2 overflow-x-auto whitespace-nowrap scrollbar-none">
-                            <button
-                                onClick={() => setActiveTab('details')}
-                                className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all cursor-pointer ${activeTab === 'details' ? 'border-accent text-accent' : 'border-transparent text-subText hover:text-mainText'}`}
-                            >
-                                Event Manual
-                            </button>
 
-                            <button
-                                onClick={() => setActiveTab('results')}
-                                className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${activeTab === 'results' ? 'border-emerald-500 text-emerald-500' : 'border-transparent text-subText hover:text-mainText'}`}
-                            >
-                                <Trophy className="w-4 h-4" /> Podium & Winners
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab('announcements')}
-                                className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'announcements' ? 'border-accent text-accent' : 'border-transparent text-subText hover:text-mainText'}`}
-                            >
-                                Broadcasts <span className="text-[10px] px-1.5 py-0.5 bg-footer rounded-full text-subText">{eventData.announcements?.length || 0}</span>
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab('discussion')}
-                                className={`pb-3 px-2 text-sm font-bold border-b-2 transition-all cursor-pointer ${activeTab === 'discussion' ? 'border-accent text-accent' : 'border-transparent text-subText hover:text-mainText'}`}
-                            >
-                                Discussions
-                            </button>
-                            
-                            <button
-                                onClick={() => setActiveTab('participants')}
-                                className={`pb-3 text-xs font-black uppercase tracking-widest border-b-2 transition-all cursor-pointer ${activeTab === 'participants' ? 'border-accent text-mainText' : 'border-transparent text-subText/60 hover:text-mainText'}`}
-                            >
-                                Participants
-                            </button>
-                        </div>
+                        <Tabs
+                            options={tabOptions}
+                            activeTab={activeTab}
+                            onChange={(key) => setActiveTab(key)}
+                        />
 
                         {/* TAB SUB-MODULES WITH INHERITED THEME PROPS */}
                         {activeTab === 'details' && (

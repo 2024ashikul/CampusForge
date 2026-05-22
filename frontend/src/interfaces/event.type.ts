@@ -22,7 +22,9 @@ export interface EventData {
     type: 'workshop' | 'competition' | 'guest-speaker';
     status: 'upcoming' | 'completed';
     title: string;
+    shortDescription : string,
     clubName: string;
+    tags : [],
     date: string;
     time: string;
     location: string;

@@ -5,7 +5,7 @@ export default function StyleLayout() {
    
 
     return (
-        <div className="font-mono">
+        <div className="">
 
             <Outlet />
 
