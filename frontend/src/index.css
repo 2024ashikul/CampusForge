@@ -37,6 +37,9 @@
   --color-subText: var(--text-secondary);
   --color-accent: var(--brand-accent);
   --color-accentHover: var(--brand-accent-hover);
+  --width-total : 1300px;
+  --width-sidebar-small : 200px;
+  --width-sidebar-large : 600px;
 }
 
 /* 🌙 DEFAULT DARK THEME SYSTEM VALUES */

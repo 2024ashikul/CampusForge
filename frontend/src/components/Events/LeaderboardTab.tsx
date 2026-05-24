@@ -2,7 +2,7 @@ import React from 'react';
 import * as XLSX from 'xlsx';
 
 interface LeaderboardTabProps {
-    currentRole: 'admin' | 'user' | 'external';
+    memberType: 'admin' | 'member' | 'non_member';
     storedHeaders: string[] | undefined;
     storedRows: any[] | undefined;
     // Callback event handlers to pipe data arrays cleanly back up to parent database instances
@@ -10,7 +10,7 @@ interface LeaderboardTabProps {
 }
 
 export const LeaderboardTab: React.FC<LeaderboardTabProps> = ({
-    currentRole,
+    memberType,
     storedHeaders = [],
     storedRows = [],
     onUploadSuccess
@@ -54,7 +54,7 @@ export const LeaderboardTab: React.FC<LeaderboardTabProps> = ({
         <div className="space-y-6 animate-fade-in">
 
             {/* 🛠️ ADMIN EXCEL / SPREADSHEET FILES DROPZONE UPLOADER */}
-            {currentRole === 'admin' && (
+            {memberType === 'admin' && (
                 // REFACTORED: Converted panels and dashed upload bounds to semantic tokens
                 <div className="bg-card border border-customBorder rounded-xl p-5 transition-colors duration-200">
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-customBorder/60 hover:border-accent bg-primary h-32 rounded-xl cursor-pointer transition-all group">

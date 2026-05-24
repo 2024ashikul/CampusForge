@@ -19,7 +19,7 @@ export function Tabs<T extends string>({
     onChange
 }: TabsProps<T>) {
     return (
-        <div className="flex border-b border-customBorder space-x-1 overflow-x-auto">
+        <div className="flex sticky top-0 mb-4 z-50 bg-primary border-b border-customBorder space-x-1 overflow-x-auto">
             {options.map((option) => (
                 <button
                     key={option.key}

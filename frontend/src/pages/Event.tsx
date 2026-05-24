@@ -1,8 +1,6 @@
 import React, { act, useState } from 'react';
 import {
-    Calendar, MapPin, Clock, Megaphone,
-    Trophy, Sparkles, ShieldCheck, CalendarX, Eye,
-    QrCode, ArrowUpRight, MessageSquare, Image, Link as LinkIcon, MedalIcon,
+    QrCode, MessageSquare, Link as LinkIcon, MedalIcon,
 } from 'lucide-react';
 import { AnnouncementTab } from "../components/Events/AnnouncementTab";
 import { LeaderboardTab } from "../components/Events/LeaderboardTab";
@@ -14,9 +12,11 @@ import { ParticipantsTab } from "../components/Events/ParticipantsTab";
 // ==========================================
 import type { Announcement, DiscussionComment, EventData } from '../interfaces/event.type';
 
-import {Tabs,type TabOption} from '../components/Tabs';
+import { Tabs, type TabOption } from '../components/Tabs';
+import TopPortion from '../components/TopPortion';
+import { EditEvent } from '../components/EditEvent';
 
-type tabkeys = 'details' | 'announcements' | 'discussion' | 'participants' | 'results';
+type tabkeys = 'details' | 'announcements' | 'discussion' | 'participants' | 'results' | 'edit';
 
 // ==========================================
 // 2. REFRESHED MOCK COMPREHENSIVE DATA VALUE
@@ -25,6 +25,9 @@ const mockRichEventData: EventData = {
     id: "evt-2026-forgehack",
     type: "competition",
     status: "completed",
+    logoUrl: '',
+    bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    tagline: '',
     title: "ForgeHack 2026: GenAI Campus Solutions",
     clubName: "CampusForge AI & Dev Club",
     date: "June 05, 2026",
@@ -56,23 +59,27 @@ const mockRichEventData: EventData = {
     ]
 };
 
+type memberTypes = 'admin' | 'member' | 'non_member';
 // ==========================================
 // 3. MAIN INTERACTIVE APPLICATION COMPONENT
 // ==========================================
 export const Event: React.FC = () => {
     const [eventType, setEventType] = useState<'individual' | 'team'>('team');
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
-    const [currentRole, setCurrentRole] = useState<'admin' | 'user' | 'external'>('admin');
+    const [memberType, setmemberType] = useState<memberTypes>('admin');
     const [activeTab, setActiveTab] = useState<tabkeys>('details');
     const [eventData, setEventData] = useState<EventData>(mockRichEventData);
 
     const tabOptions: TabOption<tabkeys>[] = [
-        { key: 'details', label: 'My Posts' },
-        { key: 'announcements', label: 'Projects' },
+        { key: 'details', label: 'Details' },
+        { key: 'announcements', label: 'Announcements' },
         { key: 'discussion', label: 'Discussions' },
         { key: 'participants', label: 'Participants' },
         { key: 'results', label: 'Leaderboard' },
     ];
+    if (memberType == 'admin') {
+        tabOptions.push({ key: 'edit', label: 'Edit' });
+    }
 
 
 
@@ -80,56 +87,21 @@ export const Event: React.FC = () => {
     return (
         // REFACTORED: Application wrapper maps directly to your central background properties
         <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-200">
+            <TopPortion
+                bannerUrl={mockRichEventData.bannerUrl}
+                logoUrl={mockRichEventData.logoUrl}
+                name={mockRichEventData.title}
+                tagline={mockRichEventData.tagline}
+                location={mockRichEventData.location}
+                founded={mockRichEventData.founded}
+                date={mockRichEventData.date}
+                time={mockRichEventData.time}
+                memberType={memberType}
+            />
 
-            {/* ROLE SIMULATOR BAR */}
-            <div className="bg-card border-b border-accent/20 px-6 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 shadow-md">
-                <div className="flex items-center gap-2 text-xs font-semibold text-accent">
-                    <Sparkles className="w-4 h-4 text-accent" />
-                    <span>PROJECT SIMULATOR ROLE GATEWAY:</span>
-                </div>
-                <div className="flex gap-2">
-                    {(['external', 'user', 'admin'] as const).map((role) => (
-                        <button
-                            key={role}
-                            onClick={() => setCurrentRole(role)}
-                            className={`px-3 py-1 rounded text-xs font-bold capitalize transition-all cursor-pointer ${currentRole === role
-                                    ? 'bg-accent text-primary shadow font-black'
-                                    : 'bg-primary text-subText hover:text-mainText border border-customBorder'
-                                }`}
-                        >
-                            {role === 'external' ? 'External Guest' : role === 'user' ? 'Registered Attendee' : 'System Admin'}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* EVENT TITLE JUMBOTRON HERO */}
-            <div className="bg-gradient-to-r from-card via-primary/40 to-primary border-b border-customBorder py-12 px-6">
-                <div className="max-w-6xl mx-auto relative">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-accent bg-accent/10 border border-accent/20 px-3 py-1 rounded">
-                            {eventData.type === 'competition' ? '🏆 Live Tournament' : '⚙️ Technical Lab'}
-                        </span>
-                        {eventData.status === 'completed' && (
-                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded">
-                                ✓ Concluded / Archive
-                            </span>
-                        )}
-                    </div>
-
-                    <h1 className="text-3xl md:text-5xl font-black tracking-tight text-mainText mt-4 leading-tight">
-                        {eventData.title}
-                    </h1>
-                    <div className="flex flex-wrap gap-6 text-xs md:text-sm text-subText mt-6">
-                        <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-accent" /> {eventData.date}</span>
-                        <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-accent" /> {eventData.time}</span>
-                        <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-accent" /> {eventData.location}</span>
-                    </div>
-                </div>
-            </div>
 
             {/* CONTENT SYSTEM GRID NAVIGATION */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+            <div className="max-w-(--width-total) mx-auto px-4 sm:px-6 lg:px-8 mt-10">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* MAIN DYNAMIC COLUMN TRACK */}
@@ -146,17 +118,13 @@ export const Event: React.FC = () => {
                         {/* TAB SUB-MODULES WITH INHERITED THEME PROPS */}
                         {activeTab === 'details' && (
                             <EventDetailsTab
-                                currentRole={currentRole}
                                 descriptionMarkdown={eventData.descriptionMarkdown}
-                                onDescriptionChange={(updatedMarkdown) => {
-                                    setEventData(prev => ({ ...prev, descriptionMarkdown: updatedMarkdown }));
-                                }}
                             />
                         )}
 
                         {activeTab === 'results' && (
                             <LeaderboardTab
-                                currentRole={currentRole}
+                                memberType={memberType}
                                 storedHeaders={eventData.storedHeaders}
                                 storedRows={eventData.storedRows}
                                 onUploadSuccess={({ headers, rows }) => {
@@ -167,7 +135,6 @@ export const Event: React.FC = () => {
 
                         {activeTab === 'announcements' && (
                             <AnnouncementTab
-                                currentRole={currentRole}
                                 announcements={eventData.announcements}
                                 onPostAnnouncement={(freshAnn) => {
                                     setEventData({ ...eventData, announcements: [freshAnn, ...(eventData.announcements || [])] });
@@ -199,6 +166,17 @@ export const Event: React.FC = () => {
                                 registrants={eventData.registrants}
                                 expandedTeams={expandedTeams}
                                 setExpandedTeams={setExpandedTeams}
+                            />
+                        )}
+
+                        {activeTab === 'edit' && memberType == 'admin' && (
+                            <EditEvent
+                                eventData={mockRichEventData}
+                                isLeaderboardPublishedStatus={false}
+                                onUpdateEvent={(updatedEvent) => console.log("Push update modifications globally:", updatedEvent)}
+                                onAddAnnouncement={(newAnnouncement) => console.log("Append news record stack:", newAnnouncement)}
+                                onRemoveRegistrant={(id) => console.log("Prune user instance identifier:", id)}
+                                onToggleLeaderboardPublish={(status) => console.log("Set pipeline broadcast state:", status)}
                             />
                         )}
 
@@ -237,7 +215,7 @@ export const Event: React.FC = () => {
                         </div>
 
                         {/* 🎫 SIDEBAR PANEL 2: SECURITY VERIFICATION ACCESS KEY */}
-                        {currentRole === 'user' && (
+                        {memberType === 'member' && (
                             <div className="bg-card border border-accent/20 rounded-xl p-5 text-center space-y-3 shadow-lg transition-colors">
                                 <div className="inline-flex p-2 bg-accent/10 text-accent rounded-xl mx-auto border border-accent/20">
                                     <QrCode className="w-5 h-5" />

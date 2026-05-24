@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, Users, FileText, MapPin, Award, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Calendar, Users, FileText, MapPin, Award, ArrowUpRight } from 'lucide-react';
+import Tabs, { type TabOption } from '../components/Tabs';
+import { EditClub } from '../components/Clubs/Edit';
+import TopPortion from '../components/TopPortion';
+ // <-- Import the new top portion layout
+
+type memberTypes = 'admin' | 'member' | 'non_member' | 'announcement';
 
 // --- MOCK API DATA STRUCTURES ---
 interface Club {
@@ -32,6 +38,7 @@ interface ClubEvent {
   type: 'In-person' | 'Virtual';
   location: string;
   spotsLeft: number;
+  availability: string;
 }
 
 interface Participant {
@@ -77,58 +84,47 @@ const mockParticipants: Participant[] = [
   { id: '6', name: 'Zayn Malik', role: 'DevOps Novice', avatar: 'ZM', isLead: false },
 ];
 
+type tabkeys = 'posts' | 'events' | 'members' | 'edit' | 'announcement';
+
 export const Club: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'events' | 'participants'>('posts');
+  const [memberType, setMemberType] = useState<memberTypes>('admin');
+  
+  const [isAdmin, setIsAdmin] = useState(memberType === 'admin');
+  const [activeTab, setActiveTab] = useState<tabkeys>('posts');
 
+  const tabOptions: TabOption<tabkeys>[] = [
+    { key: 'posts', label: 'Club Posts' },
+    { key: 'events', label: 'Events' },
+    { key: 'members', label: 'Members' },
+  ];
+
+  if (memberType === 'admin' || memberType === 'member') {
+    tabOptions.push({ key: 'announcement', label: 'Announcements' });
+  }
+
+  if (isAdmin) {
+    tabOptions.push({ key: 'edit', label: 'Edit' });
+  }
+  
   return (
-    // REFACTORED: Layout backgrounds and core texts updated to system variables
     <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-200">
-      
-      {/* 1. HERO BANNER HEADER */}
-      <div className="relative w-full h-64 md:h-80 overflow-hidden">
-        <img 
-          src={mockClubData.bannerUrl} 
-          alt="Club Banner" 
-          className="w-full h-full object-cover brightness-[0.4]"
-        />
-        {/* REFACTORED: Transparent gradient points toward your active primary node */}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent" />
-      </div>
 
-      {/* 2. CLUB IDENTITY BLOCK (Overlapping Info Section) */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-customBorder">
-          
-          {/* Logo & Text info */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-            {/* REFACTORED: Logo background card frame mapping */}
-            <div className="w-28 h-28 bg-footer border-4 border-primary rounded-2xl flex items-center justify-center text-4xl shadow-xl transition-colors">
-              {mockClubData.logoUrl}
-            </div>
-            <div className="mb-2">
-              <h1 className="text-3xl md:text-4xl font-black text-mainText tracking-tight flex items-center gap-2">
-                {mockClubData.name}
-                <ShieldCheck className="w-6 h-6 text-accent fill-current" />
-              </h1>
-              <p className="text-accent font-medium text-sm md:text-base mt-1">{mockClubData.tagline}</p>
-              
-              <div className="flex flex-wrap gap-4 text-xs text-subText mt-3">
-                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-subText/60" /> {mockClubData.location}</span>
-                <span className="flex items-center gap-1"><Award className="w-3.5 h-3.5 text-subText/60" /> Founded {mockClubData.founded}</span>
-              </div>
-            </div>
-          </div>
+      {/* REFACTORED INTEGRATION: Injected clean component container mapping */}
+      <TopPortion 
+        bannerUrl={mockClubData.bannerUrl}
+        logoUrl={mockClubData.logoUrl}
+        name={mockClubData.name}
+        tagline={mockClubData.tagline}
+        location={mockClubData.location}
+        founded={mockClubData.founded}
+        memberType={memberType}
+      />
 
-          {/* Action Button */}
-          {/* REFACTORED: Changed background fill targets to dynamic accents and actions */}
-          <button className="px-6 py-2.5 bg-accent hover:bg-accentHover text-primary font-bold rounded-lg text-sm transition-all duration-200 transform active:scale-95 shadow-lg shadow-accent/10 cursor-pointer">
-            Join Club
-          </button>
-        </div>
-
-        {/* 3. GRID LAYOUT: LEFT SIDE DETAILS & RIGHT SIDE ACTIONS */}
+      {/* 3. GRID LAYOUT: LEFT SIDE DETAILS & RIGHT SIDE ACTIONS */}
+      {/* Note: This div wrapper keeps the exact padding offsets from your original layout */}
+      <div className="max-w-[var(--width-total)] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          
+
           {/* LEFT & CENTER COLS: Description + Interactive Tabs */}
           <div className="lg:col-span-2 space-y-8">
             {/* Description Card */}
@@ -139,26 +135,15 @@ export const Club: React.FC = () => {
 
             {/* TAB CONTROLS */}
             <div>
-              <div className="flex border-b border-customBorder space-x-1 mb-4">
-                {(['posts', 'events', 'participants'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    // REFACTORED: Interactive tab elements match centralized accent rules
-                    className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-all cursor-pointer ${
-                      activeTab === tab
-                        ? 'border-accent text-accent'
-                        : 'border-transparent text-subText hover:text-mainText'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
+              <Tabs
+                options={tabOptions}
+                activeTab={activeTab}
+                onChange={(key) => setActiveTab(key)}
+              />
 
               {/* TAB CONTENT RENDERING */}
-              <div className="space-y-4">
-                
+              <div className="space-y-4 mt-4">
+
                 {/* TAB: POSTS */}
                 {activeTab === 'posts' && mockPosts.map((post) => (
                   <div key={post.id} className="bg-card border border-customBorder hover:border-accent/40 rounded-xl p-5 transition-all group">
@@ -186,7 +171,7 @@ export const Club: React.FC = () => {
                         <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-subText/60" /> {event.location} ({event.type})</span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <span className="text-xs bg-primary border border-customBorder text-accent px-3 py-1 rounded-md font-bold block transition-colors">
                         {event.spotsLeft} spots left
                       </span>
@@ -195,16 +180,14 @@ export const Club: React.FC = () => {
                 ))}
 
                 {/* TAB: PARTICIPANTS */}
-                {activeTab === 'participants' && (
+                {activeTab === 'members' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {mockParticipants.map((member) => (
                       <div key={member.id} className="bg-card border border-customBorder rounded-xl p-4 flex items-center space-x-3 transition-colors">
-                        {/* REFACTORED: Profile avatar handles dynamic gradient variables natively */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                          member.isLead 
-                            ? 'bg-gradient-to-b from-accent to-accentHover text-primary' 
-                            : 'bg-primary text-subText'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${member.isLead
+                          ? 'bg-gradient-to-b from-accent to-accentHover text-primary'
+                          : 'bg-primary text-subText'
+                          }`}>
                           {member.avatar}
                         </div>
                         <div>
@@ -219,19 +202,28 @@ export const Club: React.FC = () => {
                   </div>
                 )}
 
+                {/* TAB: EDIT SYSTEM CONSOLE */}
+                {activeTab === 'edit' && (
+                  <EditClub
+                    clubData={mockClubData}
+                    members={mockParticipants}
+                    onUpdateClub={(updatedData) => console.log("Save registry global state:", updatedData)}
+                    onAddEvent={(newEvent) => console.log("Push event array registry:", newEvent)}
+                    onAddPost={(newPost) => console.log("Push announcement array registry:", newPost)}
+                    onKickMember={(id) => console.log("Execute removal lifecycle identifier:", id)}
+                    onToggleRole={(id) => console.log("Modify system security flag architecture for user:", id)}
+                  />
+                )}
+
               </div>
             </div>
           </div>
 
           {/* RIGHT SIDEBAR COLUMN: Counters & Quick Insights */}
           <div className="space-y-6">
-            
-            {/* STATS COUNT CARD */}
             <div className="bg-card border border-customBorder rounded-xl p-5 transition-colors">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText mb-4">Forge Ecosystem</h3>
-              
               <div className="grid grid-cols-3 gap-2 text-center">
-                {/* REFACTORED: Mini insight matrices reference layout layers */}
                 <div className="bg-primary border border-customBorder p-3 rounded-lg transition-colors">
                   <Users className="w-5 h-5 mx-auto text-accent mb-1" />
                   <div className="text-lg font-black text-mainText">{mockClubData.memberCount}</div>
@@ -250,16 +242,13 @@ export const Club: React.FC = () => {
               </div>
             </div>
 
-            {/* QUICK INFORMATION NOTICE */}
-            {/* REFACTORED: Gradients pull structural card states dynamically */}
-            <div className="bg-gradient-to-br from-card to-primary border border-customBorder rounded-xl p-5 relative overflow-hidden transition-colors">
+            <div className="bg-linear-to-br from-card to-primary border border-customBorder rounded-xl p-5 relative overflow-hidden transition-colors">
               <div className="absolute top-0 right-0 w-24 h-24 bg-accent opacity-5 rounded-full filter blur-xl transform translate-x-8 -translate-y-8" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-accent mb-1">Weekly Standups</h4>
               <p className="text-xs text-subText leading-relaxed">
                 We meet every Thursday evening to review deployment pipelines, share active engineering sprint logs, and grab pizza. All experience levels are welcome!
               </p>
             </div>
-
           </div>
 
         </div>
