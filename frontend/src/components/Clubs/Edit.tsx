@@ -120,7 +120,7 @@ export const EditClub: React.FC<EditClubProps> = ({
     <div className="space-y-8 animate-fadeIn">
       
       {/* QUICK ACTIONS TOOLBAR GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1  gap-4">
         
         <button 
           onClick={() => setActiveModal('event')}

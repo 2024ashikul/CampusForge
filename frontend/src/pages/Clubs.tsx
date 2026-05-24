@@ -177,7 +177,7 @@ export default function CampusForgeClubsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-7xl mx-auto transition-colors duration-200">
+    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-(--width-total) mx-auto transition-colors duration-200">
       
       {/* Header and Integrated Compact Analytics Bar */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">

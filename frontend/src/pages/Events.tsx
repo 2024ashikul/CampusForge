@@ -34,15 +34,21 @@ export interface EventData {
   location: string;
   virtualLink?: string | null;
   registrants: { id: string; name: string; department: string; teamName: string }[];
-
   descriptionMarkdown: string;
   resultsSpreadsheetUrl?: string | null;
-
   announcements?: Announcement[] | null;
   discussion: DiscussionComment[] | null;
+  imageUrl?: string | null; // Added to match Schema / UI potential
 }
 
-// --- Updated Dummy Data ---
+// --- Dynamic Fallback Image Mapping ---
+const CATEGORY_IMAGES: Record<EventData['type'], string> = {
+  competition: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80', // Hackathon/Tech Tech
+  workshop: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80',    // UI/UX Design/Collaboration
+  'guest-speaker': 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=600&q=80' // Seminar/Presentation
+};
+
+// --- Updated Dummy Data with optional explicit image overrides ---
 const DUMMY_EVENTS: EventData[] = [
   {
     id: 'ev-1',
@@ -60,7 +66,8 @@ const DUMMY_EVENTS: EventData[] = [
     virtualLink: 'https://discord.gg/campusforge-bytecraft',
     registrants: [],
     descriptionMarkdown: 'Long markdown text describing hackathon rubrics...',
-    discussion: []
+    discussion: [],
+    imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80' // Explicit Override
   },
   {
     id: 'ev-2',
@@ -77,7 +84,8 @@ const DUMMY_EVENTS: EventData[] = [
     location: 'Design Lab 3',
     registrants: [],
     descriptionMarkdown: 'Long markdown text describing component libraries...',
-    discussion: []
+    discussion: [],
+    imageUrl: null // Will safely fall back to CATEGORY_IMAGES.workshop
   },
   {
     id: 'ev-3',
@@ -95,7 +103,8 @@ const DUMMY_EVENTS: EventData[] = [
     registrants: [],
     descriptionMarkdown: 'Long markdown text detailing guest presentation indexes...',
     resultsSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/dummy-ev-results',
-    discussion: []
+    discussion: [],
+    imageUrl: null
   },
   {
     id: 'ev-4',
@@ -113,7 +122,8 @@ const DUMMY_EVENTS: EventData[] = [
     registrants: [],
     descriptionMarkdown: 'Long markdown text outlining strict evaluation rules...',
     resultsSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/dummy-cad-results',
-    discussion: []
+    discussion: [],
+    imageUrl: null
   },
   {
     id: 'ev-5',
@@ -131,7 +141,8 @@ const DUMMY_EVENTS: EventData[] = [
     virtualLink: 'https://zoom.us/j/campusforge-fintech',
     registrants: [],
     descriptionMarkdown: 'Long markdown content focusing on structural market indexes...',
-    discussion: []
+    discussion: [],
+    imageUrl: null
   }
 ];
 
@@ -160,7 +171,6 @@ export default function ClubsEventsPage() {
   const filteredAndSortedEvents = useMemo(() => {
     let output = [...DUMMY_EVENTS];
 
-    // Text Queries
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       output = output.filter(
@@ -171,20 +181,17 @@ export default function ClubsEventsPage() {
       );
     }
 
-    // Status Filters
     if (statusFilter !== 'all') {
       output = output.filter((e) => e.status === statusFilter);
     }
 
-    // Dynamic Tag Sorting/Matching
     if (selectedTag !== 'All') {
       output = output.filter((e) => e.tags?.includes(selectedTag));
     }
 
-    // Basic Sorting Handlers
     output.sort((a, b) => {
       if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
-      if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(b.date).getTime();
       if (sortBy === 'alphabetical') return a.title.localeCompare(b.title);
       return 0;
     });
@@ -202,7 +209,7 @@ export default function ClubsEventsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-7xl mx-auto transition-colors duration-200">
+    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-(--width-total) mx-auto transition-colors duration-200">
       
       {/* Header and Compact Meta Badge Section */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">
@@ -211,7 +218,7 @@ export default function ClubsEventsPage() {
           <p className="text-subText text-sm">Discover and track workshops, design sprints, and active challenges.</p>
         </div>
 
-        {/* Counter Section: Compact, horizontal inline grid */}
+        {/* Counter Section */}
         <div className="flex flex-wrap items-center gap-2 bg-card border border-customBorder rounded-xl p-2.5 shadow-sm max-w-max">
           <div className="px-3 py-1 bg-footer rounded-lg text-center">
             <span className="block text-[10px] text-subText font-bold uppercase tracking-wider">Total</span>
@@ -232,8 +239,6 @@ export default function ClubsEventsPage() {
 
       {/* Control Panel Area */}
       <section className="bg-footer border border-customBorder rounded-xl p-5 mb-8 space-y-4">
-        
-        {/* Input Search Controls */}
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1">
             <input
@@ -246,7 +251,6 @@ export default function ClubsEventsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
-            {/* Status Segment Controls */}
             <div className="inline-flex rounded-lg bg-primary p-1 border border-customBorder">
               {(['all', 'upcoming', 'completed'] as StatusFilter[]).map((status) => (
                 <button
@@ -263,7 +267,6 @@ export default function ClubsEventsPage() {
               ))}
             </div>
 
-            {/* General Sorting Combobox */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -276,7 +279,6 @@ export default function ClubsEventsPage() {
           </div>
         </div>
 
-        {/* Dynamic Filtering by Tags System */}
         <div className="border-t border-customBorder/50 pt-3">
           <span className="block text-subText text-[11px] font-bold uppercase tracking-wider mb-2">
             Sort / Filter by Meta Tags
@@ -310,55 +312,70 @@ export default function ClubsEventsPage() {
             {filteredAndSortedEvents.map((event) => {
               const isUpcoming = event.status === 'upcoming';
               const isFree = event.entranceFee.toLowerCase() === 'free';
+              
+              // Fallback optimization: Use schema image, or fallback to structural category image
+              const resolvedCardImage = event.imageUrl || CATEGORY_IMAGES[event.type];
 
               return (
                 <article
                   key={event.id}
-                  className="bg-card border border-customBorder rounded-xl flex flex-col justify-between overflow-hidden shadow-sm hover:border-accent/40 transition-all duration-200"
+                  className="group bg-card border border-customBorder rounded-xl flex flex-col justify-between overflow-hidden shadow-sm hover:border-accent/40 transition-all duration-300 hover:shadow-md"
                 >
-                  <div className="p-5">
-                    {/* Upper Metadata Flag Layout */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-footer border border-customBorder text-subText">
-                        {event.type.replace('-', ' ')}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                          isUpcoming
-                            ? 'bg-accent/10 text-accent'
-                            : 'bg-footer text-subText border border-customBorder'
-                        }`}
-                      >
-                        {event.status}
-                      </span>
+                  <div>
+                    {/* Visual Aspect Ratio Image Banner Container */}
+                    <div className="relative w-full aspect-video bg-footer overflow-hidden border-b border-customBorder/60">
+                      <img
+                        src={resolvedCardImage}
+                        alt={event.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      {/* Subtle dark gradient overlay to ensure tags or upper statuses remain high contrast */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
+                      
+                      {/* Floating Absolute Overlays on Top of Media */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-black/70 backdrop-blur-xs border border-white/10 text-white shadow-sm">
+                          {event.type.replace('-', ' ')}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded backdrop-blur-xs shadow-sm ${
+                            isUpcoming
+                              ? 'bg-accent text-white font-black'
+                              : 'bg-black/60 text-neutral-400 border border-white/10'
+                          }`}
+                        >
+                          {event.status}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Content Header Rows */}
-                    <h3 className="text-lg font-bold text-mainText mb-0.5 tracking-tight">
-                      {event.title}
-                    </h3>
-                    <p className="text-xs font-medium text-accent mb-3">{event.clubName}</p>
+                    {/* Content Core Body Area */}
+                    <div className="p-5 pb-2">
+                      <h3 className="text-lg font-bold text-mainText mb-0.5 tracking-tight group-hover:text-accent transition-colors duration-200">
+                        {event.title}
+                      </h3>
+                      <p className="text-xs font-medium text-accent mb-3">{event.clubName}</p>
 
-                    {/* Integrated shortDescription field */}
-                    <p className="text-xs text-subText line-clamp-3 mb-4 leading-relaxed">
-                      {event.shortDescription}
-                    </p>
+                      <p className="text-xs text-subText line-clamp-2 mb-4 leading-relaxed">
+                        {event.shortDescription}
+                      </p>
 
-                    {/* In-Card Display of Associated Tags */}
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {event.tags?.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-[10px] text-subText/80 px-1.5 py-0.5 rounded bg-primary/60 border border-customBorder/40"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {event.tags?.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] text-subText/80 px-1.5 py-0.5 rounded bg-primary/60 border border-customBorder/40"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Operational Logistics Deck & Adaptive Button Blocks */}
-                  <div className="p-5 pt-0 mt-auto">
+                  {/* Operational Logistics Deck & Action Footers */}
+                  <div className="p-5 pt-2 mt-auto">
                     <div className="bg-footer rounded-lg p-3 border border-customBorder space-y-2 text-xs text-subText">
                       <div className="flex justify-between items-center">
                         <span>Timeline:</span>
@@ -366,18 +383,14 @@ export default function ClubsEventsPage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Location:</span>
-                        <span className="text-mainText font-medium truncate max-w-[150px]">{event.location}</span>
+                        <span className="text-mainText font-medium truncate max-w-37.5">{event.location}</span>
                       </div>
-                      
-                      {/* Entry Fee Indicator */}
                       <div className="flex justify-between items-center">
                         <span>Entry Cost:</span>
                         <span className={`font-semibold capitalize ${isFree ? 'text-accent' : 'text-mainText'}`}>
                           {event.entranceFee}
                         </span>
                       </div>
-
-                      {/* Dynamic Format/Type Selector Badge */}
                       <div className="flex justify-between items-center">
                         <span>Format:</span>
                         <span className="text-mainText font-medium capitalize bg-primary/40 border border-customBorder/50 px-2 py-0.5 rounded text-[11px]">
@@ -386,14 +399,13 @@ export default function ClubsEventsPage() {
                       </div>
                     </div>
 
-                    {/* Cleaned Action Footers: Exactly one explicit View Option Button */}
                     <div className="mt-4 pt-1">
                       {isUpcoming ? (
-                        <button className="w-full bg-accent text-accent text-xs font-bold py-2 rounded-lg transition-transform active:scale-[0.99]">
+                        <button className="w-full bg-accent text-accent text-xs font-bold py-2 rounded-lg transition-transform active:scale-[0.99] cursor-pointer">
                           View Event ({event.participationType === 'team' ? 'Team' : 'Individual'})
                         </button>
                       ) : (
-                        <button className="w-full bg-primary border border-customBorder text-subText hover:text-mainText text-xs font-semibold py-2 rounded-lg transition-colors">
+                        <button className="w-full bg-primary border border-customBorder text-subText hover:text-mainText text-xs font-semibold py-2 rounded-lg transition-colors cursor-pointer">
                           View Event (Completed)
                         </button>
                       )}

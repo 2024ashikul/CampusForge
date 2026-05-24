@@ -153,8 +153,8 @@ export const Projects: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 transition-colors duration-200">
-      <div className="max-w-4xl mx-auto">
+    <div className=" min-h-screen bg-primary text-mainText px-4 py-8  md:px-8 transition-colors duration-200">
+      <div className="mx-auto">
         
         {/* --- Header & Compact Metrics Block Section --- */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">

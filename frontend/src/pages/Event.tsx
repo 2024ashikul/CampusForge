@@ -10,6 +10,7 @@ import { ParticipantsTab } from "../components/Events/ParticipantsTab";
 // ==========================================
 // 1. TYPINGS & INTERFACES (TypeScript Blueprints)
 // ==========================================
+
 import type { Announcement, DiscussionComment, EventData } from '../interfaces/event.type';
 
 import { Tabs, type TabOption } from '../components/Tabs';
@@ -28,9 +29,12 @@ const mockRichEventData: EventData = {
     logoUrl: '',
     bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
     tagline: '',
+    tags :['Generative AI', 'Agentic LLMs', 'Next.js 15', 'TypeScript', 'Vector DBs', 'Vercel AI SDK', 'Hackathon'],
     title: "ForgeHack 2026: GenAI Campus Solutions",
     clubName: "CampusForge AI & Dev Club",
     date: "June 05, 2026",
+    start_time: '9 :00 AM',
+    end_time: '5:00 PM',
     time: "9:00 AM (Friday) - 5:00 PM (Saturday)",
     location: "Campus Innovation Hub & Main Auditorium",
     virtualLink: "https://discord.gg/campusforge-hackathon",
@@ -56,7 +60,13 @@ const mockRichEventData: EventData = {
     ],
     discussion: [
         { id: 'd1', user: 'Zayn M.', role: 'Student', avatar: 'ZM', text: 'Where can we download our compliance participation certificates?', time: '2 hrs ago' }
-    ]
+    ],
+    settings: {
+        isResultsPublished: true,
+        isDraft: true,
+        isParticipationPubic: true,
+        isDiscussionOpen: true
+    }
 };
 
 type memberTypes = 'admin' | 'member' | 'non_member';
@@ -69,7 +79,44 @@ export const Event: React.FC = () => {
     const [memberType, setmemberType] = useState<memberTypes>('admin');
     const [activeTab, setActiveTab] = useState<tabkeys>('details');
     const [eventData, setEventData] = useState<EventData>(mockRichEventData);
+    const [currentStatus, setCurrentStatus] = useState<'FUTURE' | 'ONGOING' | 'COMPLETED'>('FUTURE');
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
+
+    React.useEffect(() => {
+        const calculateTimeMetrics = () => {
+            const now = new Date().getTime();
+
+            // Map data directly from your eventData state blueprint attributes
+            // (Assumes parseable date strings are mapped into these keys)
+            const start = new Date(`${eventData.date} ${eventData.start_time}`).getTime();
+            const end = new Date(`${eventData.date} ${eventData.end_time}`).getTime();
+
+            if (now > end) {
+                setCurrentStatus('COMPLETED');
+                return;
+            }
+
+            if (now >= start && now <= end) {
+                setCurrentStatus('ONGOING');
+                return;
+            }
+
+            setCurrentStatus('FUTURE');
+            const distance = start - now;
+
+            setTimeLeft({
+                days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((distance % (1000 * 60)) / 1000),
+            });
+        };
+
+        calculateTimeMetrics();
+        const tickerInterval = setInterval(calculateTimeMetrics, 1000);
+        return () => clearInterval(tickerInterval);
+    }, [eventData.date, eventData.start_time, eventData.end_time]);
     const tabOptions: TabOption<tabkeys>[] = [
         { key: 'details', label: 'Details' },
         { key: 'announcements', label: 'Announcements' },
@@ -136,9 +183,6 @@ export const Event: React.FC = () => {
                         {activeTab === 'announcements' && (
                             <AnnouncementTab
                                 announcements={eventData.announcements}
-                                onPostAnnouncement={(freshAnn) => {
-                                    setEventData({ ...eventData, announcements: [freshAnn, ...(eventData.announcements || [])] });
-                                }}
                             />
                         )}
 
@@ -186,32 +230,68 @@ export const Event: React.FC = () => {
                     <div className="space-y-6">
 
                         {/* ⏱️ SIDEBAR PANEL 1: REGISTRATION TRACKING PROGRESS ENGINE */}
+                        {/* ⏱️ SIDEBAR PANEL 1: ADAPTIVE EVENT LIFECYCLE LIFELINE ENGINE */}
                         <div className="bg-card border border-customBorder rounded-xl p-5 space-y-4 transition-colors">
                             <div className="flex items-center justify-between border-b border-customBorder pb-2">
-                                <span className="text-[10px] text-subText font-bold uppercase tracking-wider block">Live Event Metrics</span>
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                                <span className="text-[10px] text-subText font-bold uppercase tracking-wider block">
+                                    {currentStatus === 'FUTURE' && 'Countdown To Execution'}
+                                    {currentStatus === 'ONGOING' && 'Live Operational Feed'}
+                                    {currentStatus === 'COMPLETED' && 'Event Status Archive'}
+                                </span>
+                                <span className={`w-2 h-2 rounded-full ${currentStatus === 'FUTURE' ? 'bg-amber-500 shadow-md shadow-amber-500/20' :
+                                        currentStatus === 'ONGOING' ? 'bg-emerald-500 animate-ping' : 'bg-slate-500/60'
+                                    }`} />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-primary border border-customBorder p-3 rounded-xl text-center transition-colors">
-                                    <div className="text-lg font-black text-mainText font-mono">148</div>
-                                    <div className="text-[10px] text-subText font-bold uppercase tracking-wide mt-0.5">Hackers In</div>
+                            {/* CONDITION A: FUTURE STATUS — RICH INTERACTIVE COUNTDOWN CHIPS */}
+                            {currentStatus === 'FUTURE' && (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div className="bg-primary border border-customBorder p-2 rounded-lg text-center">
+                                            <div className="text-base font-black text-mainText font-mono tracking-tight">{timeLeft.days}</div>
+                                            <div className="text-[8px] text-subText font-bold uppercase tracking-wider">Days</div>
+                                        </div>
+                                        <div className="bg-primary border border-customBorder p-2 rounded-lg text-center">
+                                            <div className="text-base font-black text-mainText font-mono tracking-tight">
+                                                {String(timeLeft.hours).padStart(2, '0')}
+                                            </div>
+                                            <div className="text-[8px] text-subText font-bold uppercase tracking-wider">Hrs</div>
+                                        </div>
+                                        <div className="bg-primary border border-customBorder p-2 rounded-lg text-center">
+                                            <div className="text-base font-black text-mainText font-mono tracking-tight">
+                                                {String(timeLeft.minutes).padStart(2, '0')}
+                                            </div>
+                                            <div className="text-[8px] text-subText font-bold uppercase tracking-wider">Min</div>
+                                        </div>
+                                        <div className="bg-primary border border-customBorder p-2 rounded-lg text-center">
+                                            <div className="text-base font-black text-accent font-mono tracking-tight animate-pulse">
+                                                {String(timeLeft.seconds).padStart(2, '0')}
+                                            </div>
+                                            <div className="text-[8px] text-subText font-bold uppercase tracking-wider">Sec</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="bg-primary border border-customBorder p-3 rounded-xl text-center transition-colors">
-                                    <div className="text-lg font-black text-accent font-mono">36</div>
-                                    <div className="text-[10px] text-subText font-bold uppercase tracking-wide mt-0.5">Teams Formed</div>
-                                </div>
-                            </div>
+                            )}
 
-                            <div className="space-y-1.5 pt-1">
-                                <div className="flex justify-between text-[10px] text-subText font-mono">
-                                    <span>Roster Fill Limit</span>
-                                    <span>92% Full</span>
+                            {/* CONDITION B: ONGOING STATUS — PULSING BROADCAST MARQUEE CHIP */}
+                            {currentStatus === 'ONGOING' && (
+                                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 text-center space-y-2 animate-pulse">
+                                    <div className="text-xs font-black text-emerald-400 uppercase tracking-widest">Matrix Is Active</div>
+                                    <p className="text-[10px] text-subText leading-relaxed">
+                                        Operations are live. Submissions and code tracking channels are indexing telemetry streams.
+                                    </p>
                                 </div>
-                                <div className="w-full bg-primary h-1.5 rounded-full overflow-hidden border border-customBorder transition-colors">
-                                    <div className="bg-gradient-to-r from-accent to-amber-500 h-full w-[92%] rounded-full" />
+                            )}
+
+                            {/* CONDITION C: COMPLETED STATUS — FIXED COMPLETE ARCHIVE MESSAGE */}
+                            {currentStatus === 'COMPLETED' && (
+                                <div className="bg-primary/60 border border-customBorder rounded-xl p-4 text-center space-y-2">
+                                    <div className="text-xs font-bold text-mainText uppercase tracking-wider">Operations Concluded</div>
+                                    <p className="text-[10px] text-subText leading-relaxed">
+                                        This event segment node has finished execution. Metrics and project logs are sealed inside the archives.
+                                    </p>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* 🎫 SIDEBAR PANEL 2: SECURITY VERIFICATION ACCESS KEY */}
@@ -236,7 +316,7 @@ export const Event: React.FC = () => {
                                 Focus Stacks & Disciplines
                             </span>
                             <div className="flex flex-wrap gap-1.5 pt-1">
-                                {['Generative AI', 'Agentic LLMs', 'Next.js 15', 'TypeScript', 'Vector DBs', 'Vercel AI SDK', 'Hackathon'].map((tag) => (
+                                {mockRichEventData.tags.map((tag) => (
                                     <span
                                         key={tag}
                                         className="text-[10px] font-medium px-2.5 py-1 bg-primary border border-customBorder hover:border-accent/50 rounded-lg text-subText transition-colors cursor-default"

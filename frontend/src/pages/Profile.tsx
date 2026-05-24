@@ -139,28 +139,7 @@ export const StudentView: React.FC = () => {
     <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-200">
 
       {/* SIMULATION BAR */}
-      <div className="bg-footer border-b border-customBorder px-4 py-2 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-subText">
-          <span>Simulation Viewport Hierarchy:</span>
-          <strong className="text-mainText uppercase font-mono bg-primary px-2 py-0.5 border border-customBorder rounded">
-            {viewMode} Mode
-          </strong>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { setViewMode('self'); handleCancel(); }}
-            className={`px-3 py-1 rounded transition-all cursor-pointer font-medium flex items-center gap-1 ${viewMode === 'self' ? 'bg-accent text-primary' : 'bg-card border border-customBorder text-subText'}`}
-          >
-            <UserCheck className="w-3 h-3" /> View as Myself
-          </button>
-          <button
-            onClick={() => { setViewMode('other'); handleCancel(); }}
-            className={`px-3 py-1 rounded transition-all cursor-pointer font-medium flex items-center gap-1 ${viewMode === 'other' ? 'bg-accent text-primary' : 'bg-card border border-customBorder text-subText'}`}
-          >
-            <Eye className="w-3 h-3" /> View as Visitor
-          </button>
-        </div>
-      </div>
+      
 
       {/* HEADER BANNER COVER */}
       <div className="h-44 w-full bg-gradient-to-r from-accent/20 via-card to-accent/10 border-b border-customBorder relative">
