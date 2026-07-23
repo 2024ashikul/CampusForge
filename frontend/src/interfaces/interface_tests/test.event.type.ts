@@ -8,7 +8,7 @@ export interface Skill {
     level: SkillLevel;
 }
 
-interface Student {
+export interface Student {
     studentId: string;
     name: string;
     email: string;
@@ -17,15 +17,19 @@ interface Student {
     skills: Skill[];
 }
 
-
-interface StudentDetails extends Student {
-    posts: Post[],
-    projects: Project[],
-    enrolledClubs: Club[],
-    enrolledEvents: Event[]
+export interface Project {
+    id: string;
+    title: string;
 }
 
-interface Club {
+export interface StudentDetails extends Student {
+    posts: Post[];
+    projects: Project[];
+    enrolledClubs: Club[];
+    enrolledEvents: EventData[];
+}
+
+export interface Club {
     name: string;
     tagline: string;
     description: string;
@@ -35,16 +39,16 @@ interface Club {
     founded: string;
 }
 
-interface ClubDetails extends Club {
-    members: Student[],
-    posts: Post[],
-    events: Event[],
+export interface ClubDetails extends Club {
+    members: Student[];
+    posts: Post[];
+    events: EventData[];
 }
 
-interface Post {
+export interface Post {
     id: string;
     title: string;
-    postType: PostType,
+    postType: PostType;
     markdownContent: string;
     createdAt: string;
     author: PostAuthor;
@@ -53,7 +57,6 @@ interface Post {
     tags: string[] | null;
     reactions: PostReactionsMap | null;
 }
-
 
 export interface PostAuthor {
     id: string;
@@ -88,10 +91,6 @@ export interface PostAttachment {
     name?: string;
 }
 
-
-
-
-
 export interface Announcement {
     id: string;
     date: string;
@@ -110,15 +109,14 @@ export interface DiscussionComment {
     time: string;
 }
 
-
 export interface EventData {
     id: string;
     type: 'workshop' | 'competition' | 'guest-speaker';
     status: 'upcoming' | 'completed';
     title: string;
-    shortDescription: string,
+    shortDescription: string;
     clubName: string;
-    tags: [],
+    tags: string[];
     date: string;
     time: string;
     location: string;
@@ -126,10 +124,8 @@ export interface EventData {
     spotsLeft: number;
     totalSpots: number;
     registrants: { id: string; name: string; department: string; teamName: string }[];
-
     descriptionMarkdown: string;
     resultsSpreadsheetUrl?: string | null;
-
     announcements?: Announcement[] | null;
     discussion: DiscussionComment[] | null;
 }

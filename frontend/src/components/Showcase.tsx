@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { PostCard } from './ClubPostComponent';
-import type { AdvancedPost } from '../interfaces/post.type';
+import { PostCard } from './Posts/PostCard';
+import type { PostData } from '../interfaces/post.type';
 import { FileText, Image as ImageIcon, Video, Link as LinkIcon, Layers, Cpu, Sparkles } from 'lucide-react';
 
-// --- SHOWCASE DUMMY MOCK VALUES ---
-const dummyScenarios: Record<string, AdvancedPost> = {
+const dummyScenarios: Record<string, PostData> = {
   markdown: {
     id: 'demo-1',
-    type: 'student',
     title: '📝 MDEditor Raw Output & Rendering Validation',
+    postType: 'DISCUSSION',
     createdAt: '2 mins ago',
-    author: { id: 'a1', name: 'Alex Rivera', avatar: 'AR', role: 'UI Contributor' },
+    author: { id: 'a1', name: 'Alex Rivera', avatar: '👨‍💻', association: 'STUDENT', roleTitle: 'UI Contributor' },
     markdownContent: `### Rich Text System Test
 This text is created using rich-text markup layout arrays.
 
@@ -22,60 +21,23 @@ This text is created using rich-text markup layout arrays.
 | Component Layout | Style Strategy | Hydration |
 | :--- | :--- | :--- |
 | Post Card | Tailwind CSS | Client Side |`,
-    reactions: [{ emoji: '🔥', count: 12, userReacted: true }, { emoji: '🧠', count: 4, userReacted: false }],
-    comments: [{ id: 'c1', author: { id: 'a2', name: 'Emily Chen', avatar: 'EC' }, content: 'Wow, the text layout renders perfectly!', createdAt: '1 min ago' }]
+    attachments: [],
+    comments: [{ id: 'c1', postId: 'demo-1', parentId: null, authorName: 'Emily Chen', authorAvatar: '👩‍💻', content: 'Wow, the text layout renders perfectly!', createdAt: '1 min ago', reactions: {} }],
+    tags: ['Markdown', 'Validation'],
+    reactions: { 'u1': 'LIKE' }
   },
 
   project: {
     id: 'demo-2',
-    type: 'project',
     title: '🚀 SynthEcho: Audio-to-MIDI Neural Project Node',
+    postType: 'PROJECT',
     createdAt: '1 hour ago',
-    author: { id: 'a3', name: 'CampusForge Lab', avatar: '⚙️', role: 'Core Project' },
+    author: { id: 'a3', name: 'CampusForge Lab', avatar: '⚙️', association: 'CLUB', roleTitle: 'Core Project' },
     markdownContent: `We successfully built a transformer node processing polyphonic instruments directly inside client layers using optimized WebAssembly loops. Check it out!`,
-    projectDetails: {
-      techStack: ['PyTorch', 'Rust', 'Next.js', 'WebAudio API'],
-      githubUrl: 'https://github.com/example/synthecho',
-      liveUrl: 'https://synthecho.dev'
-    },
-    reactions: [{ emoji: '🚀', count: 45, userReacted: false }, { emoji: '🙌', count: 18, userReacted: true }],
-    comments: []
-  },
-
-  mediaImage: {
-    id: 'demo-3',
-    type: 'student',
-    title: '🎨 Figma Dark Interface Layout Blueprint',
-    createdAt: '4 hours ago',
-    author: { id: 'a4', name: 'Sarah Jenkins', avatar: 'SJ', role: 'UX Designer' },
-    markdownContent: `Just wrapped up the high-fidelity mockups for our upcoming developer platform layout workspace. Kept the contrast ratios highly readable!`,
-    media: [{ type: 'image', url: 'https://images.unsplash.com/photo-1541462608141-ad4979e408c9?auto=format&fit=crop&w=1000&q=80' }],
-    reactions: [{ emoji: '❤️', count: 24, userReacted: false }],
-    comments: []
-  },
-
-  mediaVideo: {
-    id: 'demo-4',
-    type: 'club',
-    title: '🎬 Hackathon Opening Ceremonies & Rule Briefing',
-    createdAt: '1 day ago',
-    author: { id: 'a5', name: 'CampusForge AI', avatar: '⚙️', role: 'Official Admin' },
-    markdownContent: `Missed our live orientation presentation? Watch the full recap attached directly below for details on layout timelines and track benchmarks.`,
-    media: [{ type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80' }],
-    reactions: [{ emoji: '👀', count: 32, userReacted: false }],
-    comments: []
-  },
-
-  mediaLink: {
-    id: 'demo-5',
-    type: 'club',
-    title: '🔗 Reference: Layout Structuring & Core Framework Docs',
-    createdAt: '2 days ago',
-    author: { id: 'a6', name: 'System Wiki', avatar: '📚' },
-    markdownContent: `Please make sure your teams read through the global UI optimization blueprints before initializing development pipelines:`,
-    media: [{ type: 'link', url: 'https://react.dev', title: 'React Documentation Portal', description: 'Explore rendering rules, context tree lifecycles, layout effects, and concurrent memory management engines.', thumbnailUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=400&q=80' }],
-    reactions: [{ emoji: '🔖', count: 15, userReacted: true }],
-    comments: []
+    attachments: [{ id: 'at-1', postId: 'demo-2', type: 'LINK', url: 'https://github.com/example/synthecho', name: 'GitHub Repository' }],
+    comments: [],
+    tags: ['WebAssembly', 'Rust', 'PyTorch'],
+    reactions: { 'u2': 'STAR' }
   }
 };
 
@@ -85,9 +47,6 @@ export const PostShowcaseDashboard: React.FC = () => {
   const triggers = [
     { key: 'markdown', label: 'Rich Text Output', icon: FileText, desc: 'MDEditor text, tables & titles' },
     { key: 'project', label: 'Project Repos & Stack', icon: Cpu, desc: 'GitHub links & tech stack rows' },
-    { key: 'mediaImage', label: 'Image Attachments', icon: ImageIcon, desc: 'High-res image frame rendering' },
-    { key: 'mediaVideo', label: 'Video Clip Assets', icon: Video, desc: 'Custom play overlay stream containers' },
-    { key: 'mediaLink', label: 'Parsed Web Links', icon: LinkIcon, desc: 'Structured link card metadata views' }
   ];
 
   return (
@@ -129,7 +88,7 @@ export const PostShowcaseDashboard: React.FC = () => {
 
         {/* RIGHT PREVIEW SCREEN */}
         <div className="lg:col-span-7">
-          <PostCard post={dummyScenarios[activeScenario]} />
+          <PostCard postData={dummyScenarios[activeScenario]} />
         </div>
 
       </div>

@@ -6,23 +6,27 @@ import { useTheme } from '../../context/ThemeContext';
 const MDEditor = React.lazy(() => import('@uiw/react-md-editor'));
 
 interface PostFormProps {
-  // Pass identifying attributes directly into the form instead of returning up
-  eventId: string;
-  clubName: string;
-  
-  // Explicit close handler to notify parent modal view wrapper to unmount/hide
-  onClose: () => void;
+  eventId?: string;
+  clubName?: string;
+  onClose?: () => void;
   modalTitle?: string;
-  // Feature toggle flags
   isImageInput?: boolean;
   isVideoInput?: boolean;
   isTags?: boolean;
+  onPublish?: (
+    title: string, 
+    markdown: string, 
+    association: 'STUDENT' | 'CLUB', 
+    attachments: Omit<PostAttachment, 'id' | 'postId'>[],
+    tags: string[]
+  ) => void;
 }
 
 export const PostForm: React.FC<PostFormProps> = ({ 
-  eventId,
-  clubName,
+  eventId = 'ev-default',
+  clubName = 'Campus Community',
   onClose,
+  onPublish,
   isImageInput = true,
   isVideoInput = true,
   modalTitle,
@@ -165,8 +169,9 @@ export const PostForm: React.FC<PostFormProps> = ({
        */
       console.log("Transmitting autonomous self-contained data payload to network:", outPayload);
       
-      // Artificial delay simulation to show layout progression state UI properly
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (onPublish) {
+        onPublish(title, content || '', 'STUDENT', stagedAttachments, finalTags);
+      }
 
       // 4. Form internal variable scrub/reset operation 
       setTitle('');
@@ -175,7 +180,7 @@ export const PostForm: React.FC<PostFormProps> = ({
       setTags([]);
 
       // 5. Fire parent view controller visibility toggle callback close handler natively
-      onClose();
+      if (onClose) onClose();
 
     } catch (error) {
       console.error("Critical submission disruption caught:", error);
@@ -185,11 +190,12 @@ export const PostForm: React.FC<PostFormProps> = ({
     }
   };
 
-  const getAttachmentIcon = (type: 'PHOTO' | 'VIDEO' | 'LINK') => {
+  const getAttachmentIcon = (type: 'PHOTO' | 'VIDEO' | 'FILE' | 'LINK') => {
     switch (type) {
       case 'PHOTO': return <Image className="w-3.5 h-3.5 text-emerald-400" />;
       case 'VIDEO': return <Video className="w-3.5 h-3.5 text-blue-400" />;
       case 'LINK': return <LinkIcon className="w-3.5 h-3.5 text-amber-400" />;
+      case 'FILE': default: return <UploadCloud className="w-3.5 h-3.5 text-cyan-400" />;
     }
   };
 

@@ -1,204 +1,241 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   User,
   Mail,
-  Globe,
   Edit3,
   Check,
-  FileText,
-  Award,
   Briefcase,
   Layers,
-  Calendar,
   ArrowUpRight,
-  ExternalLink,
-  Code,
   Plus,
-  Trash2,
-  UserCheck,
-  Eye,
-  AwardIcon
+  Loader2,
+  WifiOff,
+  Sparkles,
+  Zap,
+  Trash2
 } from 'lucide-react';
 
-// --- TYPE DEFINITIONS ---
-import { type Student,type SkillLevel,type Skill } from '../interfaces/student.type';
+import {
+  getUserByIdApi,
+  getPostsApi,
+  updateUserApi,
+  type BackendUser,
+  type BackendPost,
+  type Skill,
+  type SkillLevel
+} from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { type TabOption, Tabs } from '../components/Tabs';
 
+type TabKey = 'posts';
 
+// Helper to get initials
+function getInitials(name: string) {
+  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+}
 
+const UserProfileView: React.FC = () => {
+  const { profileid } = useParams<{ profileid: string }>();
+  const { user: authUser } = useAuth();
 
-import {type TabOption, Tabs } from '../components/Tabs';
+  const [profile, setProfile] = useState<BackendUser | null>(null);
+  const [posts, setPosts] = useState<BackendPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const [activeTab, setActiveTab] = useState<TabKey>('posts');
+  const [isEditing, setIsEditing] = useState(false);
 
-type tabkeys = 'posts' | 'projects' | 'achievements' | 'events';
-// --- HELPER FUNCTION FOR VISUAL METER WIDTHS ---
-const getLevelPercentage = (level: SkillLevel): string => {
-  switch (level) {
-    case 'Beginner': return '33%';
-    case 'Intermediate': return '66%';
-    case 'Advanced': return '100%';
-    default: return '0%';
-  }
-};
-
-const initialStudent: Student = {
-  studentId: "STU-2024-8941",
-  name: "Alex Rivera",
-  email: "a.rivera@campusforge.edu",
-  department: "Computer Science & Engineering",
-  bio: "Full Stack Engineer specializing in reactive architecture and distributed systems. Lead contributor to the Campus UI Kit initiative.",
-  socials: {
-    github: "github.com/alexrivera",
-    linkedin: "linkedin.com/in/alex-rivera",
-    twitter: "twitter.com/rivera_dev",
-    website: "alexrivera.dev"
-  },
-  skills: [
-    { name: "React / Next.js", level: "Advanced" },
-    { name: "TypeScript", level: "Advanced" },
-    { name: "Tailwind CSS", level: "Advanced" },
-    { name: "Node.js & Go", level: "Intermediate" },
-    { name: "GraphQL", level: "Beginner" }
-  ],
-  posts: [
-    { id: 'p1', title: 'Optimizing Global State in Monorepos', excerpt: 'Architectural breakdown of context splitting, state machines, and micro-frontend communication strategies.', date: 'May 14, 2026', category: 'Engineering' },
-    { id: 'p2', title: 'Why We Switched to Tailwind v4.0 Semantic Layers', excerpt: 'An analytical review of token compilation efficiencies and runtime theme shifting mechanics.', date: 'April 28, 2026', category: 'UI/UX' }
-  ],
-  achievements: [
-    { id: 'a1', title: '1st Place Winner - Spring Hackathon', issuer: 'CampusForge AI Org', date: 'March 2026', description: 'Developed an AI-driven accessibility micro-agent parse system.' }
-  ],
-  projects: [
-    { id: 'pr1', title: 'ForgeLint Engine', description: 'Automated abstract structural rule validator configured specifically for dynamic utility projects.', tech: ['Rust', 'TypeScript'], link: '#' }
-  ],
-  enrolledClubs: [
-    { id: 'c1', name: "CampusForge AI & Dev Club", role: "Technical Project Director", logo: "⚙️" },
-    { id: 'c2', name: "Open Source Guild", role: "Core Maintainer", logo: "🌐" }
-  ],
-  enrolledEvents: [
-    { id: 'e1', title: "AI Agent Workshop: Building with Gemini API", clubName: "CampusForge AI & Dev Club", date: "May 25, 2026", location: "Lab 3B" }
-  ]
-};
-
-// --- MAIN WORKBENCH VIEW ---
-export const StudentView: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'self' | 'other'>('self');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-
-  const [profile, setProfile] = useState<Student>(initialStudent);
-  const [activeTab, setActiveTab] = useState<tabkeys>('posts');
-
-  const tabOptions: TabOption<tabkeys>[] = [
-    { key: 'posts', label: 'Some Posts' },
-    { key: 'projects', label: 'Active Projects' },
-    { key: 'achievements', label: 'Achievements' },
-    { key: 'events', label: 'Enrolled Events' }
-  ];
-
-  const [bioInput, setBioInput] = useState(profile.bio);
-  const [socialsInput, setSocialsInput] = useState({ ...profile.socials });
-  const [skillsInput, setSkillsInput] = useState<Skill[]>([...profile.skills]);
-
-  // New Skill Entry States
+  // Edit states
+  const [bioInput, setBioInput] = useState('');
+  const [skillsList, setSkillsList] = useState<Skill[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('Intermediate');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    setProfile(prev => ({
-      ...prev,
-      bio: bioInput,
-      socials: socialsInput,
-      skills: skillsInput
-    }));
-    setIsEditing(false);
-  };
+  const userId = Number(profileid) || authUser?.id;
+  const isOwnProfile = authUser?.id === userId;
 
-  const handleCancel = () => {
-    setBioInput(profile.bio);
-    setSocialsInput({ ...profile.socials });
-    setSkillsInput([...profile.skills]);
-    setIsEditing(false);
-  };
+  useEffect(() => {
+    if (!userId) return;
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [userData, userPosts] = await Promise.all([
+          getUserByIdApi(userId!),
+          getPostsApi({ user_id: userId }).catch(() => []),
+        ]);
+        if (!userData) throw new Error('User not found');
+        setProfile(userData);
+        setBioInput(userData.bio || '');
+        setSkillsList(userData.skills || []);
+        setPosts(userPosts);
+      } catch (e: any) {
+        setError(e.message || 'Failed to load profile');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, [userId]);
 
-  const addSkill = () => {
+  const handleAddSkill = () => {
     if (!newSkillName.trim()) return;
-    const cleanSkill: Skill = {
-      name: newSkillName.trim(),
-      level: newSkillLevel
-    };
-    setSkillsInput([...skillsInput, cleanSkill]);
+    const exists = skillsList.some(
+      (s) => s.name.toLowerCase() === newSkillName.trim().toLowerCase()
+    );
+    if (exists) return;
+    setSkillsList([...skillsList, { name: newSkillName.trim(), level: newSkillLevel }]);
     setNewSkillName('');
-    setNewSkillLevel('Intermediate');
   };
 
-  const removeSkill = (indexToRemove: number) => {
-    setSkillsInput(skillsInput.filter((_, idx) => idx !== indexToRemove));
+  const handleRemoveSkill = (skillName: string) => {
+    setSkillsList(skillsList.filter((s) => s.name !== skillName));
   };
 
-  const canEdit = viewMode === 'self';
+  const handleSave = async () => {
+    if (!profile || !isOwnProfile) return;
+    setIsSaving(true);
+    const updated = await updateUserApi(profile.id, {
+      bio: bioInput,
+      skills: skillsList,
+    });
+    if (updated) {
+      setProfile(updated);
+      setBioInput(updated.bio || '');
+      setSkillsList(updated.skills || []);
+    }
+    setIsSaving(false);
+    setIsEditing(false);
+  };
+
+  const tabOptions: TabOption<TabKey>[] = [
+    { key: 'posts', label: `Posts (${posts.length})` },
+  ];
+
+  const getSkillBadgeClass = (level: SkillLevel) => {
+    switch (level) {
+      case 'Advanced':
+        return 'skill-badge-advanced';
+      case 'Intermediate':
+        return 'skill-badge-intermediate';
+      case 'Beginner':
+      default:
+        return 'skill-badge-beginner';
+    }
+  };
+
+  // ── Loading ──
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-accent animate-spin" />
+          <p className="text-subText text-xs font-mono">Syncing futuristic profile matrix...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error ──
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center p-8">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="flex items-center justify-center gap-3 px-4 py-3 bg-red-900/20 border border-red-500/40 rounded-xl text-sm">
+            <WifiOff size={16} className="text-red-400 shrink-0" />
+            <span className="text-red-300">{error || 'Profile not found'}</span>
+          </div>
+          <a href="/students" className="text-accent text-sm hover:underline">← Back to Students</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-200">
+    <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-300">
 
-      {/* SIMULATION BAR */}
-      
-
-      {/* HEADER BANNER COVER */}
-      <div className="h-44 w-full bg-gradient-to-r from-accent/20 via-card to-accent/10 border-b border-customBorder relative">
+      {/* Cyber Glow Hero Banner */}
+      <div className="h-48 w-full bg-gradient-to-r from-accent/20 via-purple-600/10 to-cyan-500/20 border-b border-customBorder relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/15 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent" />
       </div>
 
-      {/* CORE WRAPPER */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
 
-        {/* CORE IDENTITY HEADER PANEL */}
-        <div className="bg-card border border-customBorder rounded-2xl p-6 shadow-xl mb-8">
+        {/* Identity Panel */}
+        <div className="glass-panel rounded-2xl p-6 shadow-2xl mb-8 border border-customBorder">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-              <div className="w-24 h-24 rounded-2xl bg-footer border-4 border-primary flex items-center justify-center text-4xl shadow-md font-bold text-accent">
-                {profile.name.split(' ').map(n => n[0]).join('')}
-              </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
+              {/* Avatar */}
+              {profile.profile_pic ? (
+                <img
+                  src={profile.profile_pic}
+                  alt={profile.name}
+                  className="w-28 h-28 rounded-2xl border-4 border-primary object-cover shadow-2xl"
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-accent via-cyan-500 to-purple-600 border-4 border-primary flex items-center justify-center text-4xl font-black text-primary shadow-2xl">
+                  {getInitials(profile.name)}
+                </div>
+              )}
 
               <div className="mb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-black tracking-tight">{profile.name}</h1>
-                  <span className="text-xs font-mono px-2 py-0.5 bg-footer text-subText rounded-md border border-customBorder">
-                    {profile.studentId}
-                  </span>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-black tracking-tight glow-text">{profile.name}</h1>
+                  {isOwnProfile && (
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 bg-accent/10 text-accent rounded-full border border-accent/40 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> You
+                    </span>
+                  )}
                 </div>
-                <p className="text-accent font-medium text-sm mt-1">{profile.department}</p>
-                <div className="flex items-center gap-2 text-xs text-subText mt-2">
-                  <Mail className="w-3.5 h-3.5 text-subText/70" />
+                <p className="text-accent font-semibold text-sm mt-1 flex items-center gap-1.5">
+                  <Zap className="w-4 h-4" /> {profile.department}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-subText mt-2 font-mono">
+                  <Mail className="w-3.5 h-3.5 text-accent/70" />
                   <span>{profile.email}</span>
-                  <span className="text-subText/40">•</span>
-                  <span className="text-subText/70 font-mono italic">School Record (Immutable)</span>
                 </div>
               </div>
             </div>
 
-            {/* CONDITIONAL ADMINISTRATION ACTION CONTROLS */}
-            {canEdit && (
+            {/* Edit controls */}
+            {isOwnProfile && (
               <div className="flex gap-2">
                 {isEditing ? (
                   <>
                     <button
-                      onClick={handleCancel}
-                      className="px-4 py-2 bg-footer border border-customBorder text-mainText font-bold rounded-lg text-sm transition-all cursor-pointer"
+                      onClick={() => {
+                        setBioInput(profile.bio || '');
+                        setSkillsList(profile.skills || []);
+                        setIsEditing(false);
+                      }}
+                      className="px-4 py-2 bg-footer border border-customBorder text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer hover:bg-primary"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
-                      className="flex items-center gap-2 px-5 py-2 bg-accent text-primary font-bold rounded-lg text-sm transition-all cursor-pointer shadow-lg shadow-accent/10"
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-accent to-cyan-500 text-primary font-bold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-accent/20 disabled:opacity-60 hover:brightness-110"
                     >
-                      <Check className="w-4 h-4" /> Save Setup
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      {isSaving ? 'Saving...' : 'Save Matrix'}
                     </button>
                   </>
                 ) : (
                   <button
-                    onClick={() => { setBioInput(profile.bio); setSocialsInput({ ...profile.socials }); setSkillsInput([...profile.skills]); setIsEditing(true); }}
-                    className="flex items-center gap-2 px-5 py-2 bg-footer border border-customBorder hover:border-accent/40 text-mainText font-bold rounded-lg text-sm transition-all cursor-pointer"
+                    onClick={() => {
+                      setBioInput(profile.bio || '');
+                      setSkillsList(profile.skills || []);
+                      setIsEditing(true);
+                    }}
+                    className="flex items-center gap-2 px-5 py-2 bg-footer border border-customBorder hover:border-accent/40 text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer shadow-sm hover:shadow-md"
                   >
-                    <Edit3 className="w-4 h-4 text-accent" /> Edit Profile Configurations
+                    <Edit3 className="w-4 h-4 text-accent" /> Edit Profile & Skills
                   </button>
                 )}
               </div>
@@ -207,235 +244,182 @@ export const StudentView: React.FC = () => {
           </div>
         </div>
 
-        {/* DUAL COLUMN DATA MATRICES */}
+        {/* Two-Column Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* ================= LEFT ASIDE MATRICES ================= */}
-          <div className="lg:col-span-4 space-y-8">
+          {/* Left Sidebar: Bio + Skills Matrix */}
+          <div className="lg:col-span-4 space-y-6">
 
-            {/* PROFILE BIO AND SOCIAL MEDIA LAYERS */}
-            <div className="bg-card border border-customBorder rounded-xl p-5 space-y-5">
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-subText mb-2 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-accent" /> User Bio
-                </h3>
-                {isEditing && canEdit ? (
-                  <textarea
-                    value={bioInput}
-                    onChange={(e) => setBioInput(e.target.value)}
-                    className="w-full bg-footer text-mainText border border-customBorder rounded-lg p-3 text-sm focus:outline-none focus:border-accent"
-                    rows={3}
-                  />
-                ) : (
-                  <p className="text-sm text-mainText/90 leading-relaxed">{profile.bio}</p>
-                )}
-              </div>
-
-              <div className="border-t border-customBorder pt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-subText mb-3">Portfolios</h3>
-                <div className="space-y-2.5">
-                  {(['github', 'linkedin', 'twitter', 'website'] as const).map((network) => {
-                    const Icon = network === 'github' ? AwardIcon : network === 'linkedin' ? AwardIcon : network === 'twitter' ? AwardIcon : Globe;
-                    return (
-                      <div key={network} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 text-subText capitalize"><Icon className="w-4 h-4" /> {network}</span>
-                        {isEditing && canEdit ? (
-                          <input
-                            type="text"
-                            value={socialsInput[network]}
-                            onChange={(e) => setSocialsInput({ ...socialsInput, [network]: e.target.value })}
-                            className="bg-footer border border-customBorder rounded px-2 py-1 text-xs text-mainText font-mono w-48 text-right focus:border-accent focus:outline-none"
-                          />
-                        ) : (
-                          <a href={`https://${profile.socials[network]}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-accent hover:underline flex items-center gap-1">
-                            {profile.socials[network]} <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Bio Card */}
+            <div className="glass-panel rounded-2xl p-5 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
+                <User className="w-4 h-4 text-accent" /> Developer Overview
+              </h3>
+              {isEditing ? (
+                <textarea
+                  value={bioInput}
+                  onChange={(e) => setBioInput(e.target.value)}
+                  className="w-full bg-footer text-mainText border border-customBorder rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
+                  rows={4}
+                  placeholder="Write a short bio about yourself..."
+                />
+              ) : (
+                <p className="text-xs text-mainText/90 leading-relaxed">
+                  {profile.bio || (
+                    <span className="text-subText/50 italic">No bio specified yet.{isOwnProfile && ' Click Edit to add one.'}</span>
+                  )}
+                </p>
+              )}
             </div>
 
-            {/* DYNAMIC SKILLS MATRIX (WITH DESCRIPTIVE TIERS & MANAGEMENT) */}
-            <div className="bg-card border border-customBorder rounded-xl p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-subText mb-4 flex items-center gap-1.5">
-                <Code className="w-3.5 h-3.5 text-accent" /> Skills & Proficiency
-              </h3>
-
-              {/* Active Skill List */}
-              <div className="space-y-4 mb-4">
-                {(isEditing && canEdit ? skillsInput : profile.skills).map((skill, index) => (
-                  <div key={index} className="space-y-1.5 group relative">
-                    <div className="flex items-center justify-between text-xs font-medium">
-                      <span className="text-mainText">{skill.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-accent text-[11px] font-semibold tracking-wide bg-footer px-2 py-0.5 border border-customBorder rounded-md">
-                          {skill.level}
-                        </span>
-                        {isEditing && canEdit && (
-                          <button
-                            onClick={() => removeSkill(index)}
-                            className="text-subText hover:text-accent p-0.5 rounded transition-colors cursor-pointer"
-                            title="Remove Skill"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {/* Progress Bar reflecting categorical bounds */}
-                    <div className="w-full h-1.5 bg-footer border border-customBorder rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-accent transition-all duration-300"
-                        style={{ width: getLevelPercentage(skill.level) }}
-                      />
-                    </div>
-                  </div>
-                ))}
+            {/* Skills & Capability Matrix (Multivalued Attribute) */}
+            <div className="glass-panel rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-accent" /> Skills & Level Matrix
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-accent/10 text-accent rounded-full border border-accent/20">
+                  {skillsList.length} Skills
+                </span>
               </div>
 
-              {/* Dynamic Insertion Row */}
-              {isEditing && canEdit && (
-                <div className="border-t border-customBorder pt-4 space-y-3">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-subText">Add New Skill Node</h4>
-                  <div className="space-y-2">
+              {/* Edit skills control */}
+              {isEditing && (
+                <div className="space-y-2 pt-2 border-t border-customBorder/50">
+                  <span className="text-[11px] font-bold text-subText uppercase">Add New Skill</span>
+                  <div className="flex flex-col gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. Go, Kubernetes, Figma"
+                      placeholder="Skill name (e.g. React, Python)"
                       value={newSkillName}
                       onChange={(e) => setNewSkillName(e.target.value)}
-                      className="w-full bg-footer border border-customBorder rounded-lg px-3 py-1.5 text-xs text-mainText focus:outline-none focus:border-accent"
+                      className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
                       <select
                         value={newSkillLevel}
                         onChange={(e) => setNewSkillLevel(e.target.value as SkillLevel)}
-                        className="flex-1 bg-footer text-mainText text-xs border border-customBorder rounded-lg px-2 py-1.5 focus:outline-none focus:border-accent"
+                        className="flex-1 bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                       >
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
+                        <option value="Beginner">Beginner Level</option>
+                        <option value="Intermediate">Intermediate Level</option>
+                        <option value="Advanced">Advanced Level</option>
                       </select>
                       <button
-                        onClick={addSkill}
-                        className="bg-accent text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-90 inline-flex items-center gap-1 cursor-pointer"
+                        onClick={handleAddSkill}
+                        className="px-3 py-2 bg-accent text-primary rounded-xl text-xs font-bold hover:brightness-110 cursor-pointer flex items-center gap-1 shrink-0"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Add
+                        <Plus className="w-4 h-4" /> Add
                       </button>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Skills List Rendering */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {skillsList.length === 0 ? (
+                  <p className="text-xs text-subText/50 italic">No skills listed yet.</p>
+                ) : (
+                  skillsList.map((skill) => (
+                    <div
+                      key={skill.name}
+                      className={`skill-badge ${getSkillBadgeClass(skill.level)} group relative cursor-default`}
+                    >
+                      <span className="font-semibold">{skill.name}</span>
+                      <span className="text-[9px] opacity-75 uppercase tracking-wider font-mono">
+                        ({skill.level})
+                      </span>
+                      {isEditing && (
+                        <button
+                          onClick={() => handleRemoveSkill(skill.name)}
+                          className="ml-1 text-red-400 hover:text-red-300 p-0.5 rounded transition-colors cursor-pointer"
+                          title="Remove skill"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
-            {/* ENROLLED CLUBS ECOSYSTEM FRAME */}
-            <div className="bg-card border border-customBorder rounded-xl p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-subText mb-4 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-accent" /> Enrolled Clubs ({profile.enrolledClubs.length})
+            {/* Account Metadata Card */}
+            <div className="glass-panel rounded-2xl p-5 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" /> System Metadata
               </h3>
-              <div className="space-y-3">
-                {profile.enrolledClubs.map((club) => (
-                  <div key={club.id} className="flex items-center gap-3 p-2.5 bg-footer rounded-lg border border-customBorder">
-                    <div className="w-8 h-8 rounded-md bg-card flex items-center justify-center text-md border border-customBorder">{club.logo}</div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-mainText truncate">{club.name}</h4>
-                      <p className="text-[10px] text-subText truncate">{club.role}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center py-1 border-b border-customBorder/40">
+                  <span className="text-subText">Member Since</span>
+                  <span className="text-mainText font-mono">
+                    {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-customBorder/40">
+                  <span className="text-subText">Account Status</span>
+                  <span className={`font-mono px-2 py-0.5 rounded-full text-[10px] ${profile.is_active ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-500/30' : 'text-red-400 bg-red-950/40 border border-red-500/30'}`}>
+                    {profile.is_active ? '● Active' : '○ Inactive'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-subText">Total Posts</span>
+                  <span className="text-mainText font-mono">{posts.length}</span>
+                </div>
               </div>
             </div>
 
           </div>
 
-          {/* ================= RIGHT MAIN DISPLAY PANEL ================= */}
+          {/* Right Main Content Column */}
           <div className="lg:col-span-8 space-y-6">
+            <Tabs options={tabOptions} activeTab={activeTab} onChange={(k) => setActiveTab(k)} />
 
-            <Tabs
-              options={tabOptions}
-              activeTab={activeTab}
-              onChange={(key) => setActiveTab(key)}
-            />
-
-            {/* CONTENT ROUTER */}
             <div className="space-y-4">
-
-              {activeTab === 'posts' && profile.posts.map((post) => (
-                <div key={post.id} className="bg-card border border-customBorder hover:border-accent/30 rounded-xl p-5 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-widest bg-primary text-accent px-2 py-0.5 rounded">{post.category}</span>
-                    <span className="text-xs text-subText">{post.date}</span>
-                  </div>
-                  <h4 className="text-base font-bold text-mainText mt-2 group-hover:text-accent transition-colors flex items-center gap-1 cursor-pointer">
-                    {post.title} <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-accent" />
-                  </h4>
-                  <p className="text-xs text-subText/80 mt-1.5 line-clamp-2 leading-relaxed">{post.excerpt}</p>
+              {posts.length === 0 ? (
+                <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
+                  <Briefcase className="mx-auto text-subText/30 mb-2" size={32} />
+                  <p className="text-subText text-xs font-mono">
+                    {isOwnProfile ? "You haven't posted any updates yet." : `${profile.name} hasn't posted any updates.`}
+                  </p>
                 </div>
-              ))}
-
-              {activeTab === 'projects' && profile.projects.map((project) => (
-                <div key={project.id} className="bg-card border border-customBorder rounded-xl p-5 space-y-3 transition-all hover:border-accent/20">
-                  <div>
-                    <h4 className="text-base font-bold text-mainText flex items-center gap-1.5">
-                      <Briefcase className="w-4 h-4 text-accent" /> {project.title}
+              ) : (
+                posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="glass-panel rounded-2xl p-5 hover:border-accent/40 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                        post.post_type === 'project'
+                          ? 'bg-accent/10 text-accent border-accent/30'
+                          : post.post_type === 'announcement'
+                          ? 'bg-purple-950/40 text-purple-300 border-purple-500/30'
+                          : 'bg-footer text-subText border-customBorder'
+                      }`}>
+                        {post.post_type}
+                      </span>
+                      <span className="text-xs text-subText font-mono">
+                        {new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <h4 className="text-base font-bold text-mainText mt-2 group-hover:text-accent transition-colors flex items-center gap-1.5">
+                      {post.title} <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-accent" />
                     </h4>
-                    <p className="text-xs text-subText/90 mt-1 leading-relaxed">{project.description}</p>
+                    <p className="text-xs text-subText/80 mt-1.5 line-clamp-2 leading-relaxed">
+                      {post.description}
+                    </p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-customBorder">
-                    <div className="flex flex-wrap gap-1.5">
-                      {project.tech.map((t, idx) => (
-                        <span key={idx} className="text-[10px] bg-footer text-subText px-2 py-0.5 rounded border border-customBorder font-mono">{t}</span>
-                      ))}
-                    </div>
-                    <a href={project.link} className="text-xs text-accent font-medium hover:underline inline-flex items-center gap-1">
-                      Repository <ArrowUpRight className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                </div>
-              ))}
-
-              {activeTab === 'achievements' && profile.achievements.map((achievement) => (
-                <div key={achievement.id} className="bg-card border border-customBorder rounded-xl p-5 flex gap-4 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-footer border border-customBorder flex items-center justify-center text-accent flex-shrink-0">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-4 gap-y-1">
-                      <h4 className="text-base font-bold text-mainText">{achievement.title}</h4>
-                      <span className="text-xs text-subText font-medium font-mono">{achievement.date}</span>
-                    </div>
-                    <p className="text-xs text-accent font-medium">{achievement.issuer}</p>
-                    <p className="text-xs text-subText/80 leading-relaxed pt-1">{achievement.description}</p>
-                  </div>
-                </div>
-              ))}
-
-              {activeTab === 'events' && profile.enrolledEvents.map((event) => (
-                <div key={event.id} className="bg-card border border-customBorder rounded-xl p-5 flex items-start justify-between gap-4 transition-colors">
-                  <div className="space-y-1.5">
-                    <h4 className="text-base font-bold text-mainText">{event.title}</h4>
-                    <p className="text-xs text-accent font-medium">{event.clubName}</p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-subText pt-1">
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-subText/60" /> {event.date}</span>
-                      <span>•</span>
-                      <span>Location: <strong className="text-mainText/80">{event.location}</strong></span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] bg-accent/10 border border-accent/20 text-accent font-bold px-2.5 py-1 rounded-md uppercase font-mono tracking-wider">Confirmed</span>
-                </div>
-              ))}
-
+                ))
+              )}
             </div>
 
           </div>
-
         </div>
       </div>
-
     </div>
   );
 };
 
-export default StudentView;
+export default UserProfileView;

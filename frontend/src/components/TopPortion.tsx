@@ -11,9 +11,11 @@ interface TopPortionProps {
   tagline: string;
   location: string;
   founded?: string;
-  date? : string,
-  time? : string,
+  date?: string;
+  time?: string;
   memberType: MemberType;
+  onJoin?: () => void;
+  isJoined?: boolean;
 }
 
 export const TopPortion: React.FC<TopPortionProps> = ({
@@ -25,7 +27,9 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   founded,
   date,
   time,
-  memberType
+  memberType,
+  onJoin,
+  isJoined,
 }) => {
   return (
     <>
@@ -83,8 +87,15 @@ export const TopPortion: React.FC<TopPortionProps> = ({
           </div>
 
           {/* Action Button */}
-          {memberType === 'non_member' && (
-            <button className="px-6 py-2.5 bg-accent hover:bg-accentHover text-primary font-bold rounded-lg text-sm transition-all duration-200 transform active:scale-95 shadow-lg shadow-accent/10 cursor-pointer">
+          {isJoined ? (
+            <span className="px-6 py-2.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold rounded-lg text-sm flex items-center gap-2">
+              ✓ Joined Member
+            </span>
+          ) : (
+            <button
+              onClick={onJoin}
+              className="px-6 py-2.5 bg-accent hover:bg-accentHover text-primary font-bold rounded-lg text-sm transition-all duration-200 transform active:scale-95 shadow-lg shadow-accent/10 cursor-pointer"
+            >
               Join Club
             </button>
           )}

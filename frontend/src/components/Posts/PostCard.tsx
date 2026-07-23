@@ -1,10 +1,9 @@
 import React, { useState, Suspense } from 'react';
 import { 
-  MessageSquare, Play, FileText, Download, ExternalLink, 
-  Hash, ThumbsUp, ThumbsDown, Star, Send, CornerDownRight,
-  Image, Video, Link as LinkIcon
+  MessageSquare, FileText, Download, ExternalLink, 
+  Hash, ThumbsUp, ThumbsDown, Star, Send, CornerDownRight
 } from 'lucide-react';
-import type { PostData, PostComment, ReactionType, CommentReactionType, PostAttachment } from '../../interfaces/post.type';
+import type { PostData, PostComment, ReactionType, CommentReactionType } from '../../interfaces/post.type';
 import { useTheme } from '../../context/ThemeContext';
 
 const MarkdownPreview = React.lazy(() => 
@@ -17,7 +16,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
   const CURRENT_USER_ID = 'u-current-user'; 
   const { theme } = useTheme(); 
   
-  const [comments, setComments] = useState<PostComment[]>(postData.comments);
+  const [comments, setComments] = useState<PostComment[]>(postData.comments || []);
   const [reactions, setReactions] = useState<PostReactionsMap>(postData.reactions || {});
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
@@ -122,10 +121,10 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
   };
 
   return (
-    <div className="bg-card border border-customBorder rounded-xl overflow-hidden shadow-xl mb-6 w-full transition-all duration-200">
+    <div className="bg-card m border border-customBorder rounded-xl overflow-hidden shadow-xl mb-6 max-w-4.5xl transition-all duration-200">
       
       {/* Identity Header */}
-      <div className="p-5 pb-3 flex items-center justify-between border-b border-customBorder/30">
+      <div className="px-5 py-3 pb-3 mx-auto flex items-center justify-between border-b border-customBorder/30">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-primary border border-customBorder flex items-center justify-center text-sm transition-colors">
             {postData.author.avatar}
@@ -143,7 +142,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
       </div>
 
       {/* Content Frame Workspace */}
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-3">
         <h2 className="text-lg font-black text-mainText transition-colors">{postData.title}</h2>
         
         {/* Markdown Content Rendering Panel */}
@@ -267,7 +266,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
       </div>
 
       {/* Engagement Action Operations Row */}
-      <div className="px-5 py-3 bg-footer border-t border-customBorder flex flex-wrap items-center justify-between gap-3 transition-colors">
+      <div className="px-5 py-2 bg-footer border-t border-customBorder flex flex-wrap items-center justify-between gap-3 transition-colors">
         <div className="flex items-center gap-2">
           <button 
             onClick={() => handleReactionClick('LIKE')} 
@@ -300,7 +299,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
       {/* REDESIGNED COMMENT WORKSPACE DRAWER */}
       {isCommentBoxOpen && (
         <div className="bg-primary/40 border-t border-customBorder p-5 space-y-6 transition-colors">
-          <div className="space-y-5 max-h-[420px] overflow-y-auto pr-2">
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
             {rootComments.length > 0 ? (
               rootComments.map(root => {
                 const childReplies = getRepliesForParent(root.id);
@@ -309,7 +308,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                   <div key={root.id} className="space-y-3 relative">
                     {/* Parent Comment Component Box */}
                     <div className="bg-card p-4 rounded-xl border border-customBorder shadow-md transition-colors">
-                      <div className="flex gap-3 items-start">
+                      <div className="flex gap-2 items-start">
                         <div className="text-sm shrink-0 w-8 h-8 rounded-lg bg-primary border border-customBorder flex items-center justify-center">
                           {root.authorAvatar}
                         </div>
@@ -323,8 +322,8 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                           <p className="text-xs text-mainText pl-0.5">{root.content}</p>
                           <div className="flex items-center justify-between pt-2 border-t border-customBorder/40 mt-2">
                             <div className="flex items-center gap-1 bg-primary p-0.5 rounded-md border border-customBorder">
-                              <button onClick={() => handleCommentReactionClick(root.id, 'LIKE')} className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold cursor-pointer ${rootMetrics.userChoice === 'LIKE' ? 'text-emerald-400' : 'text-subText hover:text-mainText'}`}><ThumbsUp className="w-2.5 h-2.5" />{rootMetrics.likes}</button>
-                              <button onClick={() => handleCommentReactionClick(root.id, 'DISLIKE')} className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold cursor-pointer ${rootMetrics.userChoice === 'DISLIKE' ? 'text-rose-400' : 'text-subText hover:text-mainText'}`}><ThumbsDown className="w-2.5 h-2.5" />{rootMetrics.dislikes}</button>
+                              <button onClick={() => handleCommentReactionClick(root.id, 'LIKE')} className={`flex items-center gap-1 px-1 py-1 rounded text-[10px] font-bold cursor-pointer ${rootMetrics.userChoice === 'LIKE' ? 'text-emerald-400' : 'text-subText hover:text-mainText'}`}><ThumbsUp className="w-2.5 h-2.5" />{rootMetrics.likes}</button>
+                              <button onClick={() => handleCommentReactionClick(root.id, 'DISLIKE')} className={`flex items-center gap-1 px-1 py-1 rounded text-[10px] font-bold cursor-pointer ${rootMetrics.userChoice === 'DISLIKE' ? 'text-rose-400' : 'text-subText hover:text-mainText'}`}><ThumbsDown className="w-2.5 h-2.5" />{rootMetrics.dislikes}</button>
                             </div>
                             <button onClick={() => { setActiveReplyId(activeReplyId === root.id ? null : root.id); setReplyText(''); }} className="text-[10px] font-black uppercase text-subText hover:text-accent cursor-pointer">Reply</button>
                           </div>

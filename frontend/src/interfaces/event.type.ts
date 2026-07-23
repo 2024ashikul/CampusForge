@@ -24,34 +24,38 @@ interface Registrant {
 }
 
 export interface EventData {
+    rawId?: number;
     id: string;
     type: 'workshop' | 'competition' | 'guest-speaker';
     status: 'upcoming' | 'completed';
     title: string;
-    logoUrl :string,
-    bannerUrl :string,
-    shortDescription : string,
+    logoUrl?: string;
+    bannerUrl?: string;
+    shortDescription?: string;
     clubName: string;
-    tagline : string,
-    tags : string[],
-    start_time : string,
-    end_time : string,
+    tagline?: string;
+    tags?: string[];
+    start_time?: string;
+    end_time?: string;
     date: string;
     time: string;
     location: string;
     virtualLink?: string | null;
     spotsLeft: number;
     totalSpots: number;
+    entranceFee?: string;
+    participationType?: 'individual' | 'team';
+    isRegistered?: boolean;
+    registrantCount?: number;
     registrants: Registrant[];
-    settings : {
-        isResultsPublished? : boolean,
-        isDraft? : boolean,
-        isParticipationPubic? : boolean,
-        isDiscussionOpen? : boolean
-    },
+    settings?: {
+        isResultsPublished?: boolean;
+        isDraft?: boolean;
+        isParticipationPubic?: boolean;
+        isDiscussionOpen?: boolean;
+    };
     descriptionMarkdown: string;
     resultsSpreadsheetUrl?: string | null;
-
     announcements?: Announcement[] | null;
-    discussion: DiscussionComment[] | null;
+    discussion?: DiscussionComment[] | null;
 }

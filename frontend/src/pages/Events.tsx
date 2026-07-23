@@ -1,4 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getEventsApi, registerEventApi, type BackendEvent } from '../services/api';
+import { PaymentModal } from '../components/PaymentModal';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
 
 // --- Schema Interfaces ---
 export interface Announcement {
@@ -20,11 +24,12 @@ export interface DiscussionComment {
 }
 
 export interface EventData {
+  rawId?: number;
   id: string;
   type: 'workshop' | 'competition' | 'guest-speaker';
   status: 'upcoming' | 'completed';
   participationType: 'individual' | 'team';
-  entranceFee: 'free' | string; 
+  entranceFee: 'free' | string;
   title: string;
   shortDescription: string;
   clubName: string;
@@ -34,23 +39,25 @@ export interface EventData {
   location: string;
   virtualLink?: string | null;
   registrants: { id: string; name: string; department: string; teamName: string }[];
+  registrantCount?: number;
+  isRegistered?: boolean;
   descriptionMarkdown: string;
   resultsSpreadsheetUrl?: string | null;
   announcements?: Announcement[] | null;
   discussion: DiscussionComment[] | null;
-  imageUrl?: string | null; // Added to match Schema / UI potential
+  imageUrl?: string | null;
 }
 
 // --- Dynamic Fallback Image Mapping ---
 const CATEGORY_IMAGES: Record<EventData['type'], string> = {
-  competition: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80', // Hackathon/Tech Tech
-  workshop: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80',    // UI/UX Design/Collaboration
-  'guest-speaker': 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=600&q=80' // Seminar/Presentation
+  competition: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80',
+  workshop: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80',
+  'guest-speaker': 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=600&q=80'
 };
 
-// --- Updated Dummy Data with optional explicit image overrides ---
 const DUMMY_EVENTS: EventData[] = [
   {
+    rawId: 1,
     id: 'ev-1',
     type: 'competition',
     status: 'upcoming',
@@ -65,11 +72,13 @@ const DUMMY_EVENTS: EventData[] = [
     location: 'Main Auditorium & Discord',
     virtualLink: 'https://discord.gg/campusforge-bytecraft',
     registrants: [],
+    registrantCount: 42,
     descriptionMarkdown: 'Long markdown text describing hackathon rubrics...',
     discussion: [],
-    imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80' // Explicit Override
+    imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80'
   },
   {
+    rawId: 2,
     id: 'ev-2',
     type: 'workshop',
     status: 'upcoming',
@@ -83,11 +92,13 @@ const DUMMY_EVENTS: EventData[] = [
     time: '02:30 PM',
     location: 'Design Lab 3',
     registrants: [],
+    registrantCount: 18,
     descriptionMarkdown: 'Long markdown text describing component libraries...',
     discussion: [],
-    imageUrl: null // Will safely fall back to CATEGORY_IMAGES.workshop
+    imageUrl: null
   },
   {
+    rawId: 3,
     id: 'ev-3',
     type: 'guest-speaker',
     status: 'completed',
@@ -101,12 +112,14 @@ const DUMMY_EVENTS: EventData[] = [
     time: '11:00 AM',
     location: 'Seminar Hall B',
     registrants: [],
+    registrantCount: 85,
     descriptionMarkdown: 'Long markdown text detailing guest presentation indexes...',
     resultsSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/dummy-ev-results',
     discussion: [],
     imageUrl: null
   },
   {
+    rawId: 4,
     id: 'ev-4',
     type: 'competition',
     status: 'completed',
@@ -120,12 +133,14 @@ const DUMMY_EVENTS: EventData[] = [
     time: '01:00 PM',
     location: 'CAD Lab 1',
     registrants: [],
+    registrantCount: 24,
     descriptionMarkdown: 'Long markdown text outlining strict evaluation rules...',
     resultsSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/dummy-cad-results',
     discussion: [],
     imageUrl: null
   },
   {
+    rawId: 5,
     id: 'ev-5',
     type: 'workshop',
     status: 'upcoming',
@@ -140,6 +155,7 @@ const DUMMY_EVENTS: EventData[] = [
     location: 'Virtual Zoom Room 4',
     virtualLink: 'https://zoom.us/j/campusforge-fintech',
     registrants: [],
+    registrantCount: 60,
     descriptionMarkdown: 'Long markdown content focusing on structural market indexes...',
     discussion: [],
     imageUrl: null
@@ -150,26 +166,72 @@ type SortOption = 'date-asc' | 'date-desc' | 'alphabetical';
 type StatusFilter = 'all' | 'upcoming' | 'completed';
 
 export default function ClubsEventsPage() {
-  // --- Local Management States ---
+  const navigate = useNavigate();
+  const [eventsList, setEventsList] = useState<EventData[]>(DUMMY_EVENTS);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Filters & State
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortOption>('date-asc');
 
-  // --- Dynamic unique tag extraction ---
+  // Registration & Payment Modal
+  const [activePaymentEvent, setActivePaymentEvent] = useState<EventData | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const loadBackendEvents = async () => {
+    setIsLoading(true);
+    try {
+      const backendEvents = await getEventsApi();
+      if (backendEvents && backendEvents.length > 0) {
+        const mappedEvents: EventData[] = backendEvents.map((be: BackendEvent) => ({
+          rawId: be.id,
+          id: `ev-${be.id}`,
+          type: (be.event_type as any) || 'workshop',
+          status: (be.status as any) || 'upcoming',
+          participationType: (be.participation_type as any) || 'individual',
+          entranceFee: be.entrance_fee || 'free',
+          title: be.title,
+          shortDescription: be.short_description,
+          clubName: be.club_title || 'Campus Organization',
+          tags: be.tags || ['Event', 'Campus'],
+          date: be.date,
+          time: be.time,
+          location: be.location,
+          virtualLink: be.virtual_link,
+          registrants: [],
+          registrantCount: be.registrant_count || 0,
+          isRegistered: Boolean(be.is_registered),
+          descriptionMarkdown: be.description_markdown || be.short_description,
+          imageUrl: be.image_url,
+          discussion: [],
+        }));
+        setEventsList(mappedEvents);
+      }
+    } catch {
+      // Fallback to dummy data
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBackendEvents();
+  }, []);
+
   const allUniqueTags = useMemo(() => {
     const tagsSet = new Set<string>();
-    DUMMY_EVENTS.forEach((event) => {
+    eventsList.forEach((event) => {
       if (Array.isArray(event.tags)) {
         event.tags.forEach((tag) => tagsSet.add(tag));
       }
     });
     return ['All', ...Array.from(tagsSet)];
-  }, []);
+  }, [eventsList]);
 
-  // --- Filter and Sort Core Pipeline ---
   const filteredAndSortedEvents = useMemo(() => {
-    let output = [...DUMMY_EVENTS];
+    let output = [...eventsList];
 
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
@@ -191,26 +253,36 @@ export default function ClubsEventsPage() {
 
     output.sort((a, b) => {
       if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
-      if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
       if (sortBy === 'alphabetical') return a.title.localeCompare(b.title);
       return 0;
     });
 
     return output;
-  }, [selectedTag, statusFilter, searchQuery, sortBy]);
+  }, [eventsList, selectedTag, statusFilter, searchQuery, sortBy]);
 
-  // --- Compact Metrics Pipeline ---
   const metrics = useMemo(() => {
     return {
-      total: DUMMY_EVENTS.length,
-      upcoming: DUMMY_EVENTS.filter((e) => e.status === 'upcoming').length,
-      completed: DUMMY_EVENTS.filter((e) => e.status === 'completed').length,
+      total: eventsList.length,
+      upcoming: eventsList.filter((e) => e.status === 'upcoming').length,
+      completed: eventsList.filter((e) => e.status === 'completed').length,
     };
-  }, []);
+  }, [eventsList]);
+
+  const handleOpenRegisterModal = (event: EventData) => {
+    if (event.isRegistered) return;
+    setActivePaymentEvent(event);
+  };
 
   return (
-    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-(--width-total) mx-auto transition-colors duration-200">
-      
+    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 max-w-[1400px] mx-auto transition-colors duration-200">
+      {/* Toast Notification */}
+      {notification && (
+        <div className="fixed top-5 right-5 z-50 bg-accent text-primary px-5 py-3 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4" /> {notification}
+        </div>
+      )}
+
       {/* Header and Compact Meta Badge Section */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">
         <div>
@@ -290,7 +362,7 @@ export default function ClubsEventsPage() {
                 onClick={() => setSelectedTag(tag)}
                 className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all ${
                   selectedTag === tag
-                    ? 'bg-accent text-accent border-accent'
+                    ? 'bg-accent/10 border-accent text-accent'
                     : 'bg-card border-customBorder text-subText hover:text-mainText'
                 }`}
               >
@@ -301,114 +373,130 @@ export default function ClubsEventsPage() {
         </div>
       </section>
 
-      {/* Main Grid View */}
+      {/* Main Stack List View */}
       <main>
         {filteredAndSortedEvents.length === 0 ? (
           <div className="text-center py-16 bg-card border border-customBorder rounded-xl">
             <p className="text-subText text-sm">No collaborative campus events match your active filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="flex flex-col gap-4">
             {filteredAndSortedEvents.map((event) => {
               const isUpcoming = event.status === 'upcoming';
-              const isFree = event.entranceFee.toLowerCase() === 'free';
-              
-              // Fallback optimization: Use schema image, or fallback to structural category image
               const resolvedCardImage = event.imageUrl || CATEGORY_IMAGES[event.type];
 
               return (
                 <article
                   key={event.id}
-                  className="group bg-card border border-customBorder rounded-xl flex flex-col justify-between overflow-hidden shadow-sm hover:border-accent/40 transition-all duration-300 hover:shadow-md"
+                  className="group bg-card border border-customBorder rounded-xl overflow-hidden shadow-sm hover:border-accent/40 transition-all duration-300 hover:shadow-md flex flex-col md:flex-row"
                 >
-                  <div>
-                    {/* Visual Aspect Ratio Image Banner Container */}
-                    <div className="relative w-full aspect-video bg-footer overflow-hidden border-b border-customBorder/60">
-                      <img
-                        src={resolvedCardImage}
-                        alt={event.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      {/* Subtle dark gradient overlay to ensure tags or upper statuses remain high contrast */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
-                      
-                      {/* Floating Absolute Overlays on Top of Media */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-black/70 backdrop-blur-xs border border-white/10 text-white shadow-sm">
-                          {event.type.replace('-', ' ')}
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded backdrop-blur-xs shadow-sm ${
-                            isUpcoming
-                              ? 'bg-accent text-white font-black'
-                              : 'bg-black/60 text-neutral-400 border border-white/10'
-                          }`}
+                  {/* LEFT SIDE: Banner */}
+                  <div className="relative w-full md:w-1/4 lg:w-1/5 min-h-[160px] md:min-h-full bg-footer overflow-hidden border-b md:border-b-0 md:border-r border-customBorder/60 flex-shrink-0">
+                    <img
+                      src={resolvedCardImage}
+                      alt={event.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 absolute inset-0"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 md:from-black/30 via-transparent to-black/20 pointer-events-none" />
+
+                    <div className="absolute top-3 left-3 right-3 flex md:flex-col lg:flex-row gap-2 items-start justify-between pointer-events-none">
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-black/70 backdrop-blur-xs border border-white/10 text-white shadow-sm">
+                        {event.type.replace('-', ' ')}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded backdrop-blur-xs shadow-sm ${
+                          isUpcoming
+                            ? 'bg-accent text-white font-black'
+                            : 'bg-black/60 text-neutral-400 border border-white/10'
+                        }`}
+                      >
+                        {event.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* RIGHT SIDE */}
+                  <div className="p-5 flex-1 flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center">
+                    <div className="space-y-2 flex-1 max-w-xl">
+                      <div className="flex items-center gap-2">
+                        <h3
+                          onClick={() => navigate(`/event/${event.rawId || event.id}`)}
+                          className="text-xl font-bold text-mainText tracking-tight group-hover:text-accent transition-colors duration-200 cursor-pointer"
                         >
-                          {event.status}
+                          {event.title}
+                        </h3>
+                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 bg-white/5 border border-white/10 rounded text-blue-400">
+                          {event.entranceFee}
                         </span>
                       </div>
-                    </div>
 
-                    {/* Content Core Body Area */}
-                    <div className="p-5 pb-2">
-                      <h3 className="text-lg font-bold text-mainText mb-0.5 tracking-tight group-hover:text-accent transition-colors duration-200">
-                        {event.title}
-                      </h3>
-                      <p className="text-xs font-medium text-accent mb-3">{event.clubName}</p>
-
-                      <p className="text-xs text-subText line-clamp-2 mb-4 leading-relaxed">
+                      <p className="text-sm text-subText line-clamp-2 leading-relaxed">
                         {event.shortDescription}
                       </p>
 
-                      <div className="flex flex-wrap gap-1 mb-2">
+                      <div className="flex flex-wrap gap-1 pt-1">
                         {event.tags?.map((tag) => (
                           <span
                             key={tag}
-                            className="text-[10px] text-subText/80 px-1.5 py-0.5 rounded bg-primary/60 border border-customBorder/40"
+                            className="text-[10px] text-subText/80 px-2 py-0.5 rounded bg-primary border border-customBorder/40"
                           >
                             #{tag}
                           </span>
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Operational Logistics Deck & Action Footers */}
-                  <div className="p-5 pt-2 mt-auto">
-                    <div className="bg-footer rounded-lg p-3 border border-customBorder space-y-2 text-xs text-subText">
-                      <div className="flex justify-between items-center">
-                        <span>Timeline:</span>
-                        <span className="text-mainText font-medium">{event.date} @ {event.time}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Location:</span>
-                        <span className="text-mainText font-medium truncate max-w-37.5">{event.location}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Entry Cost:</span>
-                        <span className={`font-semibold capitalize ${isFree ? 'text-accent' : 'text-mainText'}`}>
-                          {event.entranceFee}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Format:</span>
-                        <span className="text-mainText font-medium capitalize bg-primary/40 border border-customBorder/50 px-2 py-0.5 rounded text-[11px]">
-                          {event.participationType}
-                        </span>
-                      </div>
-                    </div>
+                    <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-6 flex-shrink-0 border-t lg:border-t-0 border-customBorder/40 pt-4 lg:pt-0">
+                      <div className="flex flex-col gap-3 min-w-[200px] text-xs">
+                        <div>
+                          <span className="block text-[10px] uppercase font-bold text-subText/50 tracking-wider">Timeline</span>
+                          <span className="text-mainText font-semibold">{event.date}</span>
+                          <span className="text-subText/80 ml-1.5">@ {event.time}</span>
+                        </div>
 
-                    <div className="mt-4 pt-1">
-                      {isUpcoming ? (
-                        <button className="w-full bg-accent text-accent text-xs font-bold py-2 rounded-lg transition-transform active:scale-[0.99] cursor-pointer">
-                          View Event ({event.participationType === 'team' ? 'Team' : 'Individual'})
+                        <div>
+                          <span className="block text-[10px] uppercase font-bold text-subText/50 tracking-wider">Location</span>
+                          <span className="text-mainText font-medium truncate block max-w-[240px]">{event.location}</span>
+                        </div>
+
+                        <div>
+                          <span className="block text-[10px] uppercase font-bold text-subText/50 tracking-wider">Host Club</span>
+                          <span className="text-accent font-semibold block truncate max-w-[240px]">{event.clubName}</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full sm:w-44 flex flex-col gap-2 flex-shrink-0">
+                        {event.isRegistered ? (
+                          <button
+                            disabled
+                            className="w-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5"
+                          >
+                            <CheckCircle2 className="w-4 h-4" /> Registered
+                          </button>
+                        ) : isUpcoming ? (
+                          <button
+                            onClick={() => handleOpenRegisterModal(event)}
+                            className="w-full bg-accent text-primary hover:bg-accentHover text-xs font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md cursor-pointer text-center"
+                          >
+                            Register ({event.entranceFee})
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => navigate(`/event/${event.rawId || event.id}`)}
+                            className="w-full bg-primary border border-customBorder text-subText hover:text-mainText text-xs font-semibold py-2.5 px-4 rounded-xl transition-colors cursor-pointer text-center"
+                          >
+                            View Event Details
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => navigate(`/event/${event.rawId || event.id}`)}
+                          className="w-full text-[11px] text-subText hover:text-mainText font-medium text-center hover:underline cursor-pointer"
+                        >
+                          View Details →
                         </button>
-                      ) : (
-                        <button className="w-full bg-primary border border-customBorder text-subText hover:text-mainText text-xs font-semibold py-2 rounded-lg transition-colors cursor-pointer">
-                          View Event (Completed)
-                        </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -417,6 +505,29 @@ export default function ClubsEventsPage() {
           </div>
         )}
       </main>
+
+      {/* --- Registration & Payment Modal --- */}
+      <PaymentModal
+        isOpen={!!activePaymentEvent}
+        onClose={() => setActivePaymentEvent(null)}
+        title={activePaymentEvent?.title || ''}
+        subtitle={`Host: ${activePaymentEvent?.clubName} | Date: ${activePaymentEvent?.date}`}
+        fee={activePaymentEvent?.entranceFee || 'Free'}
+        type="event"
+        participationType={activePaymentEvent?.participationType}
+        onConfirm={async (method, teamName) => {
+          if (!activePaymentEvent) return;
+          if (activePaymentEvent.rawId) {
+            const res = await registerEventApi(activePaymentEvent.rawId, teamName, method);
+            setNotification(res.detail || `Registered for ${activePaymentEvent.title}!`);
+          } else {
+            setNotification(`Registered for ${activePaymentEvent.title}!`);
+          }
+          setActivePaymentEvent(null);
+          await loadBackendEvents();
+          setTimeout(() => setNotification(null), 4000);
+        }}
+      />
     </div>
   );
 }

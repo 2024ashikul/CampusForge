@@ -1,58 +1,39 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
-import type { PostData, PostAttachment, AuthorType } from '../interfaces/post.type';
+import type { PostData, PostAttachment } from '../interfaces/post.type';
 import { PostForm } from '../components/Posts/PostForm';
 import { PostCard } from '../components/Posts/PostCard';
-
-// Comprehensive mock data matching the core interface specification
-const DUMMY_PROJECTS: PostData[] = [
-  {
-    id: 'project-1',
-    title: 'Autonomous Solar Rover Ecosystem',
-    postType: 'PROJECT',
-    markdownContent: 'An automated navigation and battery-monitoring array utilizing lightweight RTOS microkernels.',
-    createdAt: '2 days ago',
-    author: {
-      id: 'u-1',
-      name: 'Robotics & Automation Society',
-      avatar: '🤖',
-      association: 'CLUB',
-      roleTitle: 'Core Engineering Group'
-    },
-    attachments: [
-      { id: 'a-1', postId: 'project-1', type: 'LINK', url: 'https://github.com/campusforge/solar-rover', name: 'Firmware Repository' }
-    ],
-    comments: [],
-    tags: ['Hardware', 'C++', 'RTOS'],
-    reactions: { 'user-1': 'LIKE', 'user-2': 'STAR' }
-  },
-  {
-    id: 'project-2',
-    title: 'Distributed Compute Ledger Paradigm',
-    postType: 'PROJECT',
-    markdownContent: 'P2P network layer optimization protocols running containerized sandboxes across client devices.',
-    createdAt: '5 days ago',
-    author: {
-      id: 'u-2',
-      name: 'Alex Rivera',
-      avatar: '👨‍💻',
-      association: 'STUDENT',
-      roleTitle: 'Student Contributor'
-    },
-    attachments: null,
-    comments: [],
-    tags: ['Web3', 'Go', 'Docker'],
-    reactions: { 'user-3': 'LIKE' }
-  }
-];
+import { getPostsApi, createPostApi, mapBackendPostToPostData } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 type SortOption = 'newest' | 'popular' | 'alphabetical';
 type CreatorFilter = 'all' | 'STUDENT' | 'CLUB';
 
 export const Projects: React.FC = () => {
+  const { user } = useAuth();
+
   // --- Core Lifecycle States ---
-  const [projects, setPosts] = useState<PostData[]>(DUMMY_PROJECTS);
+  const [projects, setPosts] = useState<PostData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  const loadProjects = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPostsApi({ post_type: 'project' });
+      setBackendOnline(true);
+      setPosts(data.map(mapBackendPostToPostData));
+    } catch {
+      setBackendOnline(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
 
   // --- Search & Filtering Workspace States ---
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -84,7 +65,6 @@ export const Projects: React.FC = () => {
   const filteredAndSortedProjects = useMemo(() => {
     let output = [...projects];
 
-    // 1. Text Query Matching
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       output = output.filter(
@@ -95,17 +75,14 @@ export const Projects: React.FC = () => {
       );
     }
 
-    // 2. Creator Channel Separation
     if (creatorFilter !== 'all') {
       output = output.filter((p) => p.author.association === creatorFilter);
     }
 
-    // 3. Taxonomy Tag Filtering
     if (selectedTag !== 'All') {
       output = output.filter((p) => p.tags?.includes(selectedTag));
     }
 
-    // 4. Mathematical & Chronological Sorting Logic
     output.sort((a, b) => {
       if (sortBy === 'newest') return b.id.localeCompare(a.id);
       if (sortBy === 'alphabetical') return a.title.localeCompare(b.title);
@@ -121,46 +98,57 @@ export const Projects: React.FC = () => {
   }, [projects, searchQuery, creatorFilter, selectedTag, sortBy]);
 
   // --- Handle Form Submissions via Modal Workspace ---
-  const handlePublish = (
+  const handlePublish = async (
     title: string,
     markdown: string,
     association: 'STUDENT' | 'CLUB',
     attachments: Omit<PostAttachment, 'id' | 'postId'>[],
     tags: string[]
   ) => {
-    const newId = `project-${Date.now()}`;
-    const newProject: PostData = {
-      id: newId,
+    const backendResult = await createPostApi({
       title,
-      postType: 'PROJECT',
-      markdownContent: markdown,
-      createdAt: 'Just now',
-      author: {
-        id: 'u-current',
-        name: association === 'CLUB' ? 'AI Development Guild' : 'Alex Rivera',
-        avatar: association === 'CLUB' ? '🏰' : '👨‍💻',
-        association,
-        roleTitle: association === 'CLUB' ? 'Lead Chapter' : 'Student Contributor',
-      },
-      attachments: attachments.map((a, i) => ({ ...a, id: `a-${newId}-${i}`, postId: newId })),
-      comments: [],
-      tags: tags,
-      reactions: {},
-    };
+      description: markdown,
+      post_type: 'project',
+      tags,
+      attachments,
+    });
 
-    setPosts([newProject, ...projects]);
-    setIsModalOpen(false); // Close modal automatically upon state insertion
+    if (backendResult) {
+      await loadProjects();
+    } else {
+      const newId = `project-local-${Date.now()}`;
+      const newProject: PostData = {
+        id: newId,
+        title,
+        postType: 'PROJECT',
+        markdownContent: markdown,
+        createdAt: 'Just now',
+        author: {
+          id: user ? `u-${user.id}` : 'u-current',
+          name: user ? user.name : 'Student Contributor',
+          avatar: '👨‍💻',
+          association,
+          roleTitle: user ? user.department : 'Student Contributor',
+        },
+        attachments: attachments.map((a, i) => ({ ...a, id: `a-${newId}-${i}`, postId: newId })),
+        comments: [],
+        tags: tags.length > 0 ? tags : ['Project', 'Showcase'],
+        reactions: {},
+      };
+      setPosts((prev) => [newProject, ...prev]);
+    }
+    setIsModalOpen(false);
   };
 
   return (
-    <div className=" min-h-screen bg-primary text-mainText px-4 py-8  md:px-8 transition-colors duration-200">
-      <div className="mx-auto">
+    <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 transition-colors duration-200">
+      <div className="max-w-6xl mx-auto">
         
         {/* --- Header & Compact Metrics Block Section --- */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight mb-1">Project Registry</h1>
-            <p className="text-subText text-sm">Explore, filter, and review active student engineering systems.</p>
+            <h1 className="text-3xl font-black tracking-tight mb-1">Project Showcase</h1>
+            <p className="text-subText text-sm">Explore, filter, and review active student engineering systems & software projects.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -182,12 +170,12 @@ export const Projects: React.FC = () => {
               </div>
             </div>
 
-            {/* Launch Modal Action Trigger Trigger */}
+            {/* Launch Modal Action Trigger */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-4 py-2.5 bg-accent text-primary text-xs font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap h-fit"
             >
-              <span>🚀</span> Upload Project
+              <span>🚀</span> Publish Project Showcase
             </button>
           </div>
         </header>
@@ -200,7 +188,7 @@ export const Projects: React.FC = () => {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search via developers, structural keywords..."
+                placeholder="Search projects via title, developer, or keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-primary border border-customBorder text-mainText rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-subText/50"
@@ -269,13 +257,37 @@ export const Projects: React.FC = () => {
         <main className="space-y-6">
           <div className="flex justify-between items-center px-1">
             <h2 className="text-xs font-bold text-subText uppercase tracking-[0.2em]">
-              Rendered Manifest Items ({filteredAndSortedProjects.length})
+              Projects Showcase Feed ({filteredAndSortedProjects.length})
             </h2>
           </div>
 
-          {filteredAndSortedProjects.length === 0 ? (
+          {/* Backend Status Indicator */}
+          {backendOnline === false && (
+            <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-red-900/20 border border-red-500/40 rounded-xl text-xs">
+              <span className="text-red-400 shrink-0">⚡</span>
+              <div>
+                <span className="font-bold text-red-300">Backend API is offline.</span>
+                <span className="text-red-400/80 ml-1">Run: <code className="font-mono bg-red-900/30 px-1 rounded">cd backend && python3 standalone_server.py</code></span>
+              </div>
+            </div>
+          )}
+          {backendOnline === true && projects.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-green-900/20 border border-green-500/30 rounded-lg text-[10px] font-mono text-green-400">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              Live from CampusForge API · {projects.length} project showcases loaded
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-card border border-customBorder rounded-xl gap-3">
+              <div className="w-7 h-7 rounded-full border-2 border-accent border-t-transparent animate-spin"></div>
+              <p className="text-subText text-xs font-mono">Loading project showcases from API...</p>
+            </div>
+          ) : filteredAndSortedProjects.length === 0 ? (
             <div className="text-center py-16 bg-card border border-customBorder rounded-xl">
-              <p className="text-subText text-sm font-mono">No verified deployment specs match your parameters.</p>
+              <p className="text-subText text-sm font-mono">
+                {backendOnline ? 'No projects match your filters.' : 'Start the backend to see projects.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -292,30 +304,19 @@ export const Projects: React.FC = () => {
             
             {/* Backdrop Layer Blur Effect Overlay */}
             <div 
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               onClick={() => setIsModalOpen(false)}
             />
             
             {/* Active Modal Form Payload Container */}
-            <div className="relative w-full max-w-2xl bg-card border border-customBorder rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-2xl bg-card border border-customBorder rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col transform transition-all">
               
-              {/* Modal Control Panel Header */}
-              <div className="px-6 py-4 bg-footer border-b border-customBorder flex justify-between items-center">
-                <div>
-                  <h3 className="text-md font-bold text-mainText">Upload New Project</h3>
-                  <p className="text-xs text-subText">Populate system manifests to broadcast codebases across the network.</p>
-                </div>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-lg text-subText hover:text-mainText hover:bg-footer border border-transparent hover:border-customBorder transition-all cursor-pointer text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Scrolling Content Shell Form Container */}
               <div className="p-6 overflow-y-auto bg-primary/30">
-                <PostForm onPublish={handlePublish} />
+                <PostForm 
+                  modalTitle="Publish Project Showcase" 
+                  onClose={() => setIsModalOpen(false)} 
+                  onPublish={handlePublish} 
+                />
               </div>
 
             </div>

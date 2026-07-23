@@ -2,7 +2,7 @@
   export type AttachmentType = 'PHOTO' | 'VIDEO' | 'FILE' | 'LINK';
   export type ReactionType = 'LIKE' | 'DISLIKE' | 'STAR';
   export type CommentReactionType = 'LIKE' | 'DISLIKE';
-  export type PostType = 'ClubAnnouncement' | 'EventAnnouncement' | 'UserPost' | 'Project' | 'ClubPost' | 'EventPost';
+  export type PostType = 'ClubAnnouncement' | 'EventAnnouncement' | 'UserPost' | 'Project' | 'ClubPost' | 'EventPost' | 'PROJECT' | 'DISCUSSION';
 
   export interface PostAuthor {
     id: string;
