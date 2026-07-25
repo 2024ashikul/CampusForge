@@ -57,13 +57,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        student_id: str = payload.get("sub")
+        if student_id is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
+        token_data = TokenData(student_id=student_id)
     except JWTError:
         raise credentials_exception
-    user = db.query(UserModel).filter(UserModel.email == token_data.email).first()
+    user = db.query(UserModel).filter(UserModel.student_id == token_data.student_id).first()
     if user is None:
         raise credentials_exception
     return user
@@ -74,10 +74,9 @@ def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme), db:
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if not email:
+        student_id: str = payload.get("sub")
+        if not student_id:
             return None
-        return db.query(UserModel).filter(UserModel.email == email).first()
+        return db.query(UserModel).filter(UserModel.student_id == student_id).first()
     except Exception:
         return None
-

@@ -1,19 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Loader2, WifiOff, Users, Sparkles, Filter } from 'lucide-react';
 import { getUsersApi, type BackendUser, type SkillLevel } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { UserAvatar } from '../components/ui/UserAvatar';
 
 type SortOption = 'alphabetical' | 'id-asc';
 
-// Helper to get initials
-function getInitials(name: string): string {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-}
-
 export const Students: React.FC = () => {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProfile, setSelectedProfile] = useState<BackendUser | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
@@ -71,7 +68,7 @@ export const Students: React.FC = () => {
     out.sort((a, b) =>
       sortBy === 'alphabetical'
         ? a.name.localeCompare(b.name)
-        : a.id - b.id
+        : a.student_id.localeCompare(b.student_id)
     );
     return out;
   }, [profiles, searchQuery, selectedDepartment, selectedSkillFilter, sortBy]);
@@ -212,22 +209,27 @@ export const Students: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProfiles.map((profile) => (
               <div
-                key={profile.id}
-                onClick={() => setSelectedProfile(profile)}
+                key={profile.student_id}
+                onClick={() => navigate(`/profile/${profile.student_id}`)}
                 className="glass-panel rounded-2xl p-5 flex flex-col justify-between hover:border-accent/50 hover:shadow-xl transition-all cursor-pointer group"
               >
                 <div>
                   <div className="flex items-start gap-3.5 mb-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent/30 via-cyan-500/20 to-purple-600/30 border border-customBorder flex items-center justify-center text-accent font-black text-base flex-shrink-0 group-hover:scale-105 transition-transform">
-                      {getInitials(profile.name)}
-                    </div>
+                    <UserAvatar name={profile.name} src={profile.profile_pic} className="h-12 w-12 rounded-2xl border border-customBorder font-black text-base group-hover:scale-105 transition-transform" textClassName="text-base" />
                     <div className="min-w-0">
                       <h3 className="text-base font-bold text-mainText tracking-tight group-hover:text-accent transition-colors truncate">
                         {profile.name}
                       </h3>
-                      <span className="text-xs font-mono text-subText/70 block mt-0.5 truncate">
-                        {profile.email}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-[11px] font-mono text-subText/80 truncate">
+                          {profile.department}
+                        </span>
+                        {profile.student_id && (
+                          <span className="text-[10px] font-mono text-accent bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/30 shrink-0">
+                            {profile.student_id}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -268,87 +270,6 @@ export const Students: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Profile Modal */}
-        {selectedProfile && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-              onClick={() => setSelectedProfile(null)}
-            />
-            <div className="relative w-full max-w-lg glass-panel rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col border border-accent/30">
-
-              {/* Modal header */}
-              <div className="px-6 py-4 bg-footer/80 border-b border-customBorder flex justify-between items-center">
-                <div>
-                  <h3 className="text-sm font-bold text-mainText glow-text">{selectedProfile.name}</h3>
-                  <p className="text-xs text-subText font-mono">{selectedProfile.email}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedProfile(null)}
-                  className="p-1.5 rounded-lg text-subText hover:text-mainText hover:bg-primary border border-transparent hover:border-customBorder transition-all cursor-pointer text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Modal body */}
-              <div className="p-6 overflow-y-auto space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent via-cyan-500 to-purple-600 border border-customBorder flex items-center justify-center text-primary font-black text-2xl">
-                    {getInitials(selectedProfile.name)}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-mainText">{selectedProfile.name}</h2>
-                    <p className="text-xs text-accent font-semibold mt-0.5">{selectedProfile.department}</p>
-                    <p className="text-xs text-subText mt-0.5 font-mono">{selectedProfile.email}</p>
-                  </div>
-                </div>
-
-                {selectedProfile.bio && (
-                  <div className="bg-primary/50 p-3.5 rounded-xl border border-customBorder">
-                    <span className="text-[10px] font-bold text-subText uppercase block mb-1">About</span>
-                    <p className="text-xs text-mainText/90 leading-relaxed">{selectedProfile.bio}</p>
-                  </div>
-                )}
-
-                {/* Skills Matrix in Modal */}
-                <div>
-                  <span className="text-[10px] font-bold text-subText uppercase tracking-wider block mb-2">
-                    Skills & Level Matrix
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {(!selectedProfile.skills || selectedProfile.skills.length === 0) ? (
-                      <span className="text-xs text-subText/50 italic font-mono">No skills specified</span>
-                    ) : (
-                      selectedProfile.skills.map((sk) => (
-                        <div key={sk.name} className={`skill-badge ${getSkillBadgeClass(sk.level)}`}>
-                          <span>{sk.name}</span>
-                          <span className="text-[9px] opacity-75 font-mono uppercase">({sk.level})</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-subText/60 font-mono pt-2 border-t border-customBorder/40">
-                  Member registered {new Date(selectedProfile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-                </div>
-              </div>
-
-              {/* Modal footer */}
-              <div className="bg-footer/80 border-t border-customBorder px-6 py-4 flex justify-end">
-                <a
-                  href={`/profile/${selectedProfile.id}`}
-                  className="px-5 py-2.5 bg-gradient-to-r from-accent to-cyan-500 text-primary text-xs font-black rounded-xl hover:brightness-110 active:scale-[0.98] transition-all tracking-wide flex items-center gap-2 shadow-lg"
-                >
-                  <span>👤</span> View Full Profile Matrix
-                </a>
-              </div>
-
-            </div>
           </div>
         )}
 

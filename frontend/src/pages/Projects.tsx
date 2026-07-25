@@ -87,8 +87,8 @@ export const Projects: React.FC = () => {
       if (sortBy === 'newest') return b.id.localeCompare(a.id);
       if (sortBy === 'alphabetical') return a.title.localeCompare(b.title);
       if (sortBy === 'popular') {
-        const aReactions = a.reactions ? Object.keys(a.reactions).length : 0;
-        const bReactions = b.reactions ? Object.keys(b.reactions).length : 0;
+        const aReactions = a.reactionCounts ? Object.values(a.reactionCounts).reduce((acc: number, c) => acc + (c || 0), 0) : 0;
+        const bReactions = b.reactionCounts ? Object.values(b.reactionCounts).reduce((acc: number, c) => acc + (c || 0), 0) : 0;
         return bReactions - aReactions;
       }
       return 0;
@@ -102,7 +102,7 @@ export const Projects: React.FC = () => {
     title: string,
     markdown: string,
     association: 'STUDENT' | 'CLUB',
-    attachments: Omit<PostAttachment, 'id' | 'postId'>[],
+    attachments: any[],
     tags: string[]
   ) => {
     const backendResult = await createPostApi({
@@ -110,7 +110,7 @@ export const Projects: React.FC = () => {
       description: markdown,
       post_type: 'project',
       tags,
-      attachments,
+      media: attachments,
     });
 
     if (backendResult) {
@@ -119,21 +119,27 @@ export const Projects: React.FC = () => {
       const newId = `project-local-${Date.now()}`;
       const newProject: PostData = {
         id: newId,
+        rawId: Date.now(),
         title,
-        postType: 'PROJECT',
+        postType: 'project',
+        status: 'published',
         markdownContent: markdown,
         createdAt: 'Just now',
         author: {
-          id: user ? `u-${user.id}` : 'u-current',
+          id: user ? user.student_id : 'u-current',
           name: user ? user.name : 'Student Contributor',
-          avatar: '👨‍💻',
+          avatar: user?.profile_pic || '👨‍💻',
           association,
           roleTitle: user ? user.department : 'Student Contributor',
         },
         attachments: attachments.map((a, i) => ({ ...a, id: `a-${newId}-${i}`, postId: newId })),
         comments: [],
+        commentCount: 0,
         tags: tags.length > 0 ? tags : ['Project', 'Showcase'],
-        reactions: {},
+        reactionCounts: {},
+        userReaction: null,
+        clubId: null,
+        userId: user ? user.student_id : null,
       };
       setPosts((prev) => [newProject, ...prev]);
     }

@@ -7,12 +7,12 @@ interface AuthContextType {
   user: BackendUser | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (student_id: string, email: string, password: string) => Promise<void>;
   register: (payload: {
+    student_id: string;
     name: string;
     email: string;
     password: string;
-    department: string;
     bio?: string;
   }) => Promise<void>;
   logout: () => void;
@@ -57,8 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     restoreSession();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await loginApi(email, password);
+  const login = useCallback(async (student_id: string, email: string, password: string) => {
+    const data = await loginApi(student_id, email, password);
     localStorage.setItem('campusforge-token', data.access_token);
     localStorage.setItem('campusforge-user', JSON.stringify(data.user));
     setToken(data.access_token);
@@ -67,15 +67,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = useCallback(
     async (payload: {
+      student_id: string;
       name: string;
       email: string;
       password: string;
-      department: string;
       bio?: string;
     }) => {
       await registerApi(payload);
-      // Auto-login after registration
-      await login(payload.email, payload.password);
+      // Auto-login after registration using student_id, email, password
+      await login(payload.student_id, payload.email, payload.password);
     },
     [login]
   );

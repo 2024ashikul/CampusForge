@@ -1,49 +1,105 @@
-  export type AuthorType = 'STUDENT' | 'CLUB';
-  export type AttachmentType = 'PHOTO' | 'VIDEO' | 'FILE' | 'LINK';
-  export type ReactionType = 'LIKE' | 'DISLIKE' | 'STAR';
-  export type CommentReactionType = 'LIKE' | 'DISLIKE';
-  export type PostType = 'ClubAnnouncement' | 'EventAnnouncement' | 'UserPost' | 'Project' | 'ClubPost' | 'EventPost' | 'PROJECT' | 'DISCUSSION';
+// ─── Post types ────────────────────────────────────────────────────────────────
+export type PostType = 'post' | 'project' | 'announcement' | 'announcement_event';
+export type PostStatus = 'draft' | 'published' | 'archived';
+export type ReactionType = 'heart' | 'like' | 'fire' | 'clap';
 
-  export interface PostAuthor {
-    id: string;
-    name: string;
-    avatar: string;       
-    association: AuthorType; 
-    roleTitle?: string;   
-  }
+// ─── Post Media ────────────────────────────────────────────────────────────────
+export interface PostMedia {
+  id?: number;
+  media_type: 'photo' | 'video' | 'link';
+  file_url: string;
+  display_order: number;
+}
 
-  export interface PostAttachment {
-    id: string;
-    postId: string;
-    type: AttachmentType;
-    url: string;        
-    name?: string;      
-  }
+// ─── Comment (flat — frontend groups by parent_id) ────────────────────────────
+export interface BackendComment {
+  id: number;
+  post_id: number;
+  user_id: string;
+  parent_id: number | null;    // null = root comment, number = reply to that comment id
+  content: string;
+  created_at: string;
+  author_name?: string;
+  author_pic?: string | null;
+}
 
-  export interface PostComment {
-    id: string;
-    postId: string;
-    parentId: string | null; 
-    authorName: string;
-    authorAvatar: string;
-    content: string;      
-    createdAt: string;
-    reactions: { [userId: string]: CommentReactionType }; 
-  }
+// ─── Reaction counts map ───────────────────────────────────────────────────────
+export interface ReactionCounts {
+  heart?: number;
+  like?: number;
+  fire?: number;
+  clap?: number;
+  [key: string]: number | undefined;
+}
 
-  export interface PostReactionsMap {
-    [userId: string]: ReactionType;
-  }
+// ─── Post from API ─────────────────────────────────────────────────────────────
+export interface BackendPost {
+  id: number;
+  title: string;
+  description: string;
+  post_type: PostType;
+  status: PostStatus;
+  user_id: string | null;
+  club_id: number | null;
+  event_id?: number | null;
+  tags?: string[] | null;
+  media?: PostMedia[] | null;
+  created_at: string;
+  author_name?: string;
+  author_association?: 'STUDENT' | 'CLUB';
+  author_pic?: string | null;
+  reaction_counts?: ReactionCounts | null;
+  user_reaction?: ReactionType | null;
+  comment_count?: number;
+  email_notifications_queued?: boolean;
+  notification_recipient_count?: number;
+}
 
-  export interface PostData {
-    id: string;
-    title: string;
-    postType : PostType,
-    markdownContent: string; 
-    createdAt: string;
-    author: PostAuthor;
-    attachments: PostAttachment[] | null; 
-    comments: PostComment[] | null; 
-    tags: string[] | null;
-    reactions: PostReactionsMap | null; 
-  }
+// ─── Legacy PostData shape used by existing UI components ─────────────────────
+export type AuthorType = 'STUDENT' | 'CLUB';
+export type AttachmentType = 'PHOTO' | 'VIDEO' | 'FILE' | 'LINK';
+
+export interface PostAuthor {
+  id: string;
+  name: string;
+  avatar: string;
+  association: AuthorType;
+  roleTitle?: string;
+}
+
+export interface PostAttachment {
+  id: string;
+  postId: string;
+  type: AttachmentType;
+  url: string;
+  name?: string;
+}
+
+export interface PostComment {
+  id: string;
+  postId: string;
+  parentId: string | null;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface PostData {
+  id: string;
+  rawId: number;
+  title: string;
+  postType: PostType;
+  status: PostStatus;
+  markdownContent: string;
+  createdAt: string;
+  author: PostAuthor;
+  attachments: PostAttachment[] | null;
+  comments: PostComment[] | null;
+  commentCount: number;
+  tags: string[] | null;
+  reactionCounts: ReactionCounts | null;
+  userReaction: ReactionType | null;
+  clubId: number | null;
+  userId: string | null;
+}

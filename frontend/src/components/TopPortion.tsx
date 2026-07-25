@@ -1,8 +1,8 @@
-import type React from "react";
-import { MapPin, Award, ShieldCheck, Clock, Calendar } from 'lucide-react';
+import type React from 'react';
+import { MapPin, Calendar, Users, Check, UserPlus } from 'lucide-react';
+import { RoleBadge, type UserRole } from './ui/RoleBadge';
 
-// Sync perfectly with the parent view types
-export type MemberType = 'admin' | 'member' | 'non_member' | 'announcement';
+export type EntityType = 'club' | 'event';
 
 interface TopPortionProps {
   bannerUrl: string;
@@ -13,8 +13,13 @@ interface TopPortionProps {
   founded?: string;
   date?: string;
   time?: string;
-  memberType: MemberType;
-  onJoin?: () => void;
+  entityType: EntityType;
+  userRole: UserRole;
+  isPending?: boolean;
+  memberCount?: number;
+  category?: string;
+  onAction?: () => void;
+  actionLabel?: string;
   isJoined?: boolean;
 }
 
@@ -27,81 +32,79 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   founded,
   date,
   time,
-  memberType,
-  onJoin,
+  entityType,
+  userRole,
+  isPending,
+  memberCount,
+  category,
+  onAction,
+  actionLabel,
   isJoined,
 }) => {
+  const defaultAction =
+    entityType === 'club'
+      ? isJoined ? 'Joined' : 'Join Club'
+      : isJoined ? 'Registered' : 'Register';
+
+  const label = actionLabel || defaultAction;
+  const showAction = !isJoined && onAction;
+  const entityLabel = entityType === 'club' ? 'Campus club' : 'Campus event';
+
   return (
-    <>
-      {/* 1. HERO BANNER HEADER */}
-      <div className="relative w-full h-64 md:h-80 overflow-hidden">
-        <img
-          src={bannerUrl}
-          alt="Club Banner"
-          className="w-full h-full object-cover brightness-[0.4]"
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-primary via-transparent to-transparent" />
-      </div>
+    <section className="w-full max-w-[1180px] mx-auto px-4 sm:px-5 mb-6">
+      <div className="glass-panel overflow-hidden">
+        <div className="relative h-36 sm:h-44 md:h-52 bg-footer">
+          <img src={bannerUrl} alt={`${name} cover`} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+          <span className="absolute top-4 left-4 rounded-full bg-black/35 border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
+            {entityLabel}
+          </span>
+        </div>
 
-      {/* 2. CLUB IDENTITY BLOCK (Overlapping Info Section) */}
-      <div className="max-w-[var(--width-total)] mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-customBorder">
-
-          {/* Logo & Text info */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-            <div className="w-28 h-28 bg-footer border-4 border-primary rounded-2xl flex items-center justify-center text-4xl shadow-xl transition-colors">
-              {logoUrl}
-            </div>
-            
-            <div className="mb-2">
-              <h1 className="text-3xl md:text-4xl font-black text-mainText tracking-tight flex items-center gap-2">
-                {name}
-                <ShieldCheck className="w-6 h-6 text-accent fill-current" />
-              </h1>
-              <p className="text-accent font-medium text-sm md:text-base mt-1">{tagline}</p>
-
-              <div className="flex flex-wrap gap-4 text-xs text-subText mt-3">
-                {founded && 
-                <span className="flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5 text-subText/60" /> Founded {founded}
-                </span>
-}
-
-                {date && 
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-subText/60" /> {date}
-                </span>
-}
-          {time && 
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-subText/60" /> {time}
-                </span>
-}
-                {location && 
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-subText/60" /> {location}
-                </span>
-}
+        <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between -mt-9 sm:-mt-11">
+            <div className="flex min-w-0 items-end gap-3 sm:gap-4">
+              <div className="flex h-18 w-18 sm:h-22 sm:w-22 shrink-0 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-footer text-3xl shadow-card sm:text-4xl">
+                {logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('/') ? (
+                  <img src={logoUrl} alt={`${name} profile`} className="h-full w-full object-cover" />
+                ) : logoUrl}
               </div>
+              <div className="min-w-0 pt-10 sm:pt-12">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <RoleBadge role={userRole} pending={isPending} />
+                  {category && <span className={`category-badge category-${category}`}>{category}</span>}
+                </div>
+                <h1 className="truncate text-2xl font-bold tracking-tight text-mainText sm:text-3xl">{name}</h1>
+                <p className="mt-1 text-xs text-subText sm:text-sm">{tagline}</p>
+              </div>
+            </div>
+
+            <div className="sm:pb-1">
+              {isJoined ? (
+                <span className="btn-secondary w-full sm:w-auto text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+                  <Check className="w-4 h-4" /> {entityType === 'club' ? 'Member' : 'Registered'}
+                </span>
+              ) : isPending ? (
+                <span className="btn-secondary w-full sm:w-auto text-amber-300 border-amber-500/30 bg-amber-500/10">⏳ Awaiting Approval</span>
+              ) : showAction ? (
+                <button onClick={onAction} className="btn-primary w-full sm:w-auto">
+                  <UserPlus className="w-4 h-4" /> {label}
+                </button>
+              ) : null}
             </div>
           </div>
 
-          {/* Action Button */}
-          {isJoined ? (
-            <span className="px-6 py-2.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold rounded-lg text-sm flex items-center gap-2">
-              ✓ Joined Member
-            </span>
-          ) : (
-            <button
-              onClick={onJoin}
-              className="px-6 py-2.5 bg-accent hover:bg-accentHover text-primary font-bold rounded-lg text-sm transition-all duration-200 transform active:scale-95 shadow-lg shadow-accent/10 cursor-pointer"
-            >
-              Join Club
-            </button>
-          )}
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-customBorder pt-4 text-xs text-subText">
+            {memberCount !== undefined && (
+              <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-accent" /> <strong className="text-mainText">{memberCount}</strong> members</span>
+            )}
+            {location && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-accent" /> {location}</span>}
+            {date && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-accent" /> {date}{time && ` · ${time}`}</span>}
+            {founded && <span>Established {founded}</span>}
+          </div>
         </div>
       </div>
-    </>
+    </section>
   );
 };
 

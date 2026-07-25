@@ -1,74 +1,43 @@
 import React from 'react';
 
-// Define what a single tab configuration looks like
 export interface TabOption<T extends string> {
-    key: T;
-    label: string;
+  key: T;
+  label: string;
+  icon?: React.ReactNode;
+  locked?: boolean;
 }
 
-// Define the properties our modular TabBar requires
 export interface TabsProps<T extends string> {
-    options: TabOption<T>[];
-    activeTab: T;
-    onChange: (key: T) => void;
+  options: TabOption<T>[];
+  activeTab: T;
+  onChange: (key: T) => void;
 }
 
-export function Tabs<T extends string>({
-    options,
-    activeTab,
-    onChange
-}: TabsProps<T>) {
-    return (
-        <div className="flex sticky top-0 mb-4 z-50 bg-primary border-b border-customBorder space-x-1 overflow-x-auto">
-            {options.map((option) => (
-                <button
-                    key={option.key}
-                    onClick={() => onChange(option.key)}
-                    className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-all whitespace-nowrap cursor-pointer ${activeTab === option.key
-                            ? 'border-accent text-accent'
-                            : 'border-transparent text-subText hover:text-mainText'
-                        }`}
-                >
-                    {option.label}
-                </button>
-            ))}
-        </div>
-    );
+export function Tabs<T extends string>({ options, activeTab, onChange }: TabsProps<T>) {
+  return (
+    <div className="flex gap-1 p-1 bg-footer border border-customBorder rounded-lg overflow-x-auto max-w-full [scrollbar-width:none]">
+      {options.map((option) => {
+        const isActive = activeTab === option.key;
+        return (
+          <button
+            key={option.key}
+            onClick={() => onChange(option.key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              isActive
+                ? 'bg-accent text-[#101614]'
+                : option.locked
+                ? 'text-subText/50 cursor-not-allowed'
+                : 'text-subText hover:text-mainText hover:bg-primary/50'
+            }`}
+          >
+            {option.icon}
+            {option.label}
+            {option.locked && <span className="text-[10px]">🔒</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export default Tabs;
-
-
-// example use:
-// import React, { useState } from 'react';
-// import { Tabs, TabOption } from './Tabs'; // Adjust path accordingly
-
-// // 1. Define your strict tab keys union
-// type tabkeys = 'posts' | 'projects' | 'achievements';
-
-// export const UserProfile = () => {
-//   const [activeTab, setActiveTab] = useState<tabkeys>('posts');
-
-//   // 2. Build your options array using the same strict keys
-//   const tabOptions: TabOption<tabkeys>[] = [
-//     { key: 'posts', label: 'My Posts' },
-//     { key: 'projects', label: 'Projects' },
-//     { key: 'achievements', label: 'Awards' },
-//   ];
-
-//   return (
-//     <div className="space-y-4">
-//       {/* 3. Render the component */}
-//       <Tabs 
-//         options={tabOptions} 
-//         activeTab={activeTab} 
-//         onChange={(key) => setActiveTab(key)} 
-//       />
-      
-//       {/* 4. Conditional Content Mapping */}
-//       {activeTab === 'posts' && <div>Rendering Posts View...</div>}
-//       {activeTab === 'projects' && <div>Rendering Projects View...</div>}
-//       {activeTab === 'achievements' && <div>Rendering Achievements View...</div>}
-//     </div>
-//   );
-// };

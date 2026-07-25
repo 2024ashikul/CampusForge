@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   User,
   Mail,
@@ -13,34 +13,47 @@ import {
   WifiOff,
   Sparkles,
   Zap,
-  Trash2
+  Trash2,
+  FolderGit2,
+  Calendar,
+  Building2
 } from 'lucide-react';
 
 import {
   getUserByIdApi,
   getPostsApi,
+  getUserClubsApi,
+  getUserEventsApi,
   updateUserApi,
+  uploadFileApi,
+  mapBackendPostToPostData,
   type BackendUser,
   type BackendPost,
+  type BackendClub,
+  type BackendEvent,
   type Skill,
   type SkillLevel
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { type TabOption, Tabs } from '../components/Tabs';
+import { PostCard } from '../components/Posts/PostCard';
 
-type TabKey = 'posts';
+type TabKey = 'posts' | 'projects' | 'clubs' | 'events';
 
-// Helper to get initials
 function getInitials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-const UserProfileView: React.FC = () => {
+export const UserProfileView: React.FC = () => {
   const { profileid } = useParams<{ profileid: string }>();
   const { user: authUser } = useAuth();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<BackendUser | null>(null);
   const [posts, setPosts] = useState<BackendPost[]>([]);
+  const [projects, setProjects] = useState<BackendPost[]>([]);
+  const [clubs, setClubs] = useState<BackendClub[]>([]);
+  const [events, setEvents] = useState<BackendEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,8 +67,27 @@ const UserProfileView: React.FC = () => {
   const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('Intermediate');
   const [isSaving, setIsSaving] = useState(false);
 
-  const userId = Number(profileid) || authUser?.id;
-  const isOwnProfile = authUser?.id === userId;
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+  const profilePicRef = useRef<HTMLInputElement>(null);
+
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+    setIsUploadingPic(true);
+    try {
+      const res = await uploadFileApi(file);
+      const updated = await updateUserApi(profile.student_id, { profile_pic: res.url });
+      if (updated) setProfile(updated);
+    } catch (err) {
+      console.error('Upload failed', err);
+    } finally {
+      setIsUploadingPic(false);
+      if (profilePicRef.current) profilePicRef.current.value = '';
+    }
+  };
+
+  const userId = profileid || authUser?.student_id;
+  const isOwnProfile = !profileid || authUser?.student_id === profileid || (profile && authUser?.student_id === profile.student_id);
 
   useEffect(() => {
     if (!userId) return;
@@ -63,15 +95,25 @@ const UserProfileView: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const [userData, userPosts] = await Promise.all([
+        const [userData, userPosts, userClubsData, userEventsData] = await Promise.all([
           getUserByIdApi(userId!),
           getPostsApi({ user_id: userId }).catch(() => []),
+          getUserClubsApi(userId!).catch(() => []),
+          getUserEventsApi(userId!).catch(() => []),
         ]);
         if (!userData) throw new Error('User not found');
         setProfile(userData);
         setBioInput(userData.bio || '');
         setSkillsList(userData.skills || []);
-        setPosts(userPosts);
+
+        // Filter projects vs general posts
+        const projList = userPosts.filter((p) => p.post_type === 'project');
+        const generalPosts = userPosts.filter((p) => p.post_type !== 'project');
+
+        setPosts(generalPosts.length > 0 ? generalPosts : userPosts);
+        setProjects(projList);
+        setClubs(userClubsData);
+        setEvents(userEventsData);
       } catch (e: any) {
         setError(e.message || 'Failed to load profile');
       } finally {
@@ -98,7 +140,7 @@ const UserProfileView: React.FC = () => {
   const handleSave = async () => {
     if (!profile || !isOwnProfile) return;
     setIsSaving(true);
-    const updated = await updateUserApi(profile.id, {
+    const updated = await updateUserApi(profile.student_id, {
       bio: bioInput,
       skills: skillsList,
     });
@@ -113,6 +155,9 @@ const UserProfileView: React.FC = () => {
 
   const tabOptions: TabOption<TabKey>[] = [
     { key: 'posts', label: `Posts (${posts.length})` },
+    { key: 'projects', label: `🚀 Projects (${projects.length})` },
+    { key: 'clubs', label: `🏛️ Joined Clubs (${clubs.length})` },
+    { key: 'events', label: `🗓️ Registered Events (${events.length})` },
   ];
 
   const getSkillBadgeClass = (level: SkillLevel) => {
@@ -133,7 +178,7 @@ const UserProfileView: React.FC = () => {
       <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-accent animate-spin" />
-          <p className="text-subText text-xs font-mono">Syncing futuristic profile matrix...</p>
+          <p className="text-subText text-xs font-mono">Loading student profile matrix...</p>
         </div>
       </div>
     );
@@ -148,40 +193,55 @@ const UserProfileView: React.FC = () => {
             <WifiOff size={16} className="text-red-400 shrink-0" />
             <span className="text-red-300">{error || 'Profile not found'}</span>
           </div>
-          <a href="/students" className="text-accent text-sm hover:underline">← Back to Students</a>
+          <Link to="/students" className="text-accent text-sm hover:underline">← Back to Students</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary text-mainText font-sans pb-16 transition-colors duration-300">
+    <div className="min-h-screen bg-primary text-mainText font-sans pb-16">
 
-      {/* Cyber Glow Hero Banner */}
-      <div className="h-48 w-full bg-gradient-to-r from-accent/20 via-purple-600/10 to-cyan-500/20 border-b border-customBorder relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/15 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent" />
-      </div>
+      {/* Simple Banner */}
+      <div className="h-32 w-full bg-footer border-b border-customBorder" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
 
         {/* Identity Panel */}
-        <div className="glass-panel rounded-2xl p-6 shadow-2xl mb-8 border border-customBorder">
+        <div className="bg-card border border-customBorder rounded-2xl p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
 
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
               {/* Avatar */}
-              {profile.profile_pic ? (
-                <img
-                  src={profile.profile_pic}
-                  alt={profile.name}
-                  className="w-28 h-28 rounded-2xl border-4 border-primary object-cover shadow-2xl"
+              <div className="relative">
+                {profile.profile_pic ? (
+                  <img
+                    src={profile.profile_pic}
+                    alt={profile.name}
+                    className="w-28 h-28 rounded-2xl border-4 border-primary object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-accent to-cyan-500 border-4 border-primary flex items-center justify-center text-4xl font-black text-white shadow-lg">
+                    {getInitials(profile.name)}
+                  </div>
+                )}
+                {isOwnProfile && (
+                  <button
+                    onClick={() => profilePicRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 bg-accent text-white rounded-lg flex items-center justify-center shadow-md hover:brightness-110 cursor-pointer border-2 border-primary"
+                    title="Upload profile picture"
+                  >
+                    {isUploadingPic ? <Loader2 className="w-3 h-3 animate-spin" /> : '📷'}
+                  </button>
+                )}
+                <input
+                  ref={profilePicRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicUpload}
+                  className="hidden"
                 />
-              ) : (
-                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-accent via-cyan-500 to-purple-600 border-4 border-primary flex items-center justify-center text-4xl font-black text-primary shadow-2xl">
-                  {getInitials(profile.name)}
-                </div>
-              )}
+              </div>
 
               <div className="mb-1">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -192,12 +252,43 @@ const UserProfileView: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-accent font-semibold text-sm mt-1 flex items-center gap-1.5">
+                <p className="text-accent font-semibold text-sm mt-1 flex items-center gap-1.5 flex-wrap">
                   <Zap className="w-4 h-4" /> {profile.department}
+                  {profile.student_id && (
+                    <span className="text-xs font-mono text-subText bg-footer px-2 py-0.5 rounded-md border border-customBorder">
+                      ID: {profile.student_id}
+                    </span>
+                  )}
                 </p>
-                <div className="flex items-center gap-2 text-xs text-subText mt-2 font-mono">
-                  <Mail className="w-3.5 h-3.5 text-accent/70" />
-                  <span>{profile.email}</span>
+                <div className="flex items-center gap-3 text-xs text-subText mt-2 font-mono flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5 text-accent/70" />
+                    <span>{profile.email}</span>
+                  </div>
+                  {profile.socials && (
+                    <div className="flex items-center gap-2 pl-2 border-l border-customBorder/60">
+                      {profile.socials.github && (
+                        <a href={profile.socials.github} target="_blank" rel="noreferrer" className="hover:text-accent text-[11px]">
+                          GitHub ↗
+                        </a>
+                      )}
+                      {profile.socials.linkedin && (
+                        <a href={profile.socials.linkedin} target="_blank" rel="noreferrer" className="hover:text-accent text-[11px]">
+                          LinkedIn ↗
+                        </a>
+                      )}
+                      {profile.socials.twitter && (
+                        <a href={profile.socials.twitter} target="_blank" rel="noreferrer" className="hover:text-accent text-[11px]">
+                          Twitter ↗
+                        </a>
+                      )}
+                      {profile.socials.website && (
+                        <a href={profile.socials.website} target="_blank" rel="noreferrer" className="hover:text-accent text-[11px]">
+                          Website ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -253,7 +344,7 @@ const UserProfileView: React.FC = () => {
             {/* Bio Card */}
             <div className="glass-panel rounded-2xl p-5 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
-                <User className="w-4 h-4 text-accent" /> Developer Overview
+                <User className="w-4 h-4 text-accent" /> Student Overview
               </h3>
               {isEditing ? (
                 <textarea
@@ -272,11 +363,11 @@ const UserProfileView: React.FC = () => {
               )}
             </div>
 
-            {/* Skills & Capability Matrix (Multivalued Attribute) */}
-            <div className="glass-panel rounded-2xl p-5 space-y-4">
+            {/* Skills & Capability Matrix */}
+            <div className="bg-card border border-customBorder rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-accent" /> Skills & Level Matrix
+                  <Sparkles className="w-4 h-4 text-accent" /> Skills & proficiency
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-accent/10 text-accent rounded-full border border-accent/20">
                   {skillsList.length} Skills
@@ -316,56 +407,73 @@ const UserProfileView: React.FC = () => {
                 </div>
               )}
 
-              {/* Skills List Rendering */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {skillsList.length === 0 ? (
-                  <p className="text-xs text-subText/50 italic">No skills listed yet.</p>
-                ) : (
-                  skillsList.map((skill) => (
+              <p className="text-[11px] text-subText leading-relaxed">
+                Levels show current confidence: <span className="text-sky-400">Beginner</span> is learning,
+                <span className="text-amber-400"> Intermediate</span> can work independently, and
+                <span className="text-emerald-400"> Advanced</span> can lead or mentor.
+              </p>
+
+              {/* Skills Matrix Table */}
+              {skillsList.length === 0 ? (
+                <p className="text-xs text-subText/50 italic">No skills listed yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {skillsList.map((skill) => (
                     <div
                       key={skill.name}
-                      className={`skill-badge ${getSkillBadgeClass(skill.level)} group relative cursor-default`}
+                      className="bg-primary/50 border border-customBorder rounded-xl px-3 py-2.5"
                     >
-                      <span className="font-semibold">{skill.name}</span>
-                      <span className="text-[9px] opacity-75 uppercase tracking-wider font-mono">
-                        ({skill.level})
-                      </span>
-                      {isEditing && (
-                        <button
-                          onClick={() => handleRemoveSkill(skill.name)}
-                          className="ml-1 text-red-400 hover:text-red-300 p-0.5 rounded transition-colors cursor-pointer"
-                          title="Remove skill"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-mainText">{skill.name}</span>
+                        <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          skill.level === 'Advanced' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                          skill.level === 'Intermediate' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                          'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                        }`}>
+                          {skill.level}
+                        </span>
+                        {isEditing && (
+                          <button
+                            onClick={() => handleRemoveSkill(skill.name)}
+                            className="text-red-400 hover:text-red-300 p-0.5 rounded transition-colors cursor-pointer"
+                            title="Remove skill"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                        </div>
+                      </div>
+                      <div className="mt-2 h-1.5 rounded-full bg-footer overflow-hidden" aria-label={`${skill.level} proficiency`}>
+                        <div className={`h-full rounded-full ${skill.level === 'Advanced' ? 'w-full bg-emerald-400' : skill.level === 'Intermediate' ? 'w-2/3 bg-amber-400' : 'w-1/3 bg-sky-400'}`} />
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Account Metadata Card */}
+            {/* Quick Stats Summary */}
             <div className="glass-panel rounded-2xl p-5 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
-                <Layers className="w-4 h-4 text-accent" /> System Metadata
+                <Layers className="w-4 h-4 text-accent" /> Activity Overview
               </h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center py-1 border-b border-customBorder/40">
-                  <span className="text-subText">Member Since</span>
-                  <span className="text-mainText font-mono">
-                    {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                  </span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-primary/50 p-3 rounded-xl border border-customBorder text-center">
+                  <span className="text-lg font-black text-accent block">{posts.length}</span>
+                  <span className="text-[10px] text-subText uppercase font-bold">Posts</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-customBorder/40">
-                  <span className="text-subText">Account Status</span>
-                  <span className={`font-mono px-2 py-0.5 rounded-full text-[10px] ${profile.is_active ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-500/30' : 'text-red-400 bg-red-950/40 border border-red-500/30'}`}>
-                    {profile.is_active ? '● Active' : '○ Inactive'}
-                  </span>
+                <div className="bg-primary/50 p-3 rounded-xl border border-customBorder text-center">
+                  <span className="text-lg font-black text-emerald-400 block">{projects.length}</span>
+                  <span className="text-[10px] text-subText uppercase font-bold">Projects</span>
                 </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-subText">Total Posts</span>
-                  <span className="text-mainText font-mono">{posts.length}</span>
+                <div className="bg-primary/50 p-3 rounded-xl border border-customBorder text-center">
+                  <span className="text-lg font-black text-purple-400 block">{clubs.length}</span>
+                  <span className="text-[10px] text-subText uppercase font-bold">Clubs</span>
+                </div>
+                <div className="bg-primary/50 p-3 rounded-xl border border-customBorder text-center">
+                  <span className="text-lg font-black text-cyan-400 block">{events.length}</span>
+                  <span className="text-[10px] text-subText uppercase font-bold">Events</span>
                 </div>
               </div>
             </div>
@@ -376,44 +484,153 @@ const UserProfileView: React.FC = () => {
           <div className="lg:col-span-8 space-y-6">
             <Tabs options={tabOptions} activeTab={activeTab} onChange={(k) => setActiveTab(k)} />
 
-            <div className="space-y-4">
-              {posts.length === 0 ? (
-                <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
-                  <Briefcase className="mx-auto text-subText/30 mb-2" size={32} />
-                  <p className="text-subText text-xs font-mono">
-                    {isOwnProfile ? "You haven't posted any updates yet." : `${profile.name} hasn't posted any updates.`}
-                  </p>
-                </div>
-              ) : (
-                posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="glass-panel rounded-2xl p-5 hover:border-accent/40 transition-all group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
-                        post.post_type === 'project'
-                          ? 'bg-accent/10 text-accent border-accent/30'
-                          : post.post_type === 'announcement'
-                          ? 'bg-purple-950/40 text-purple-300 border-purple-500/30'
-                          : 'bg-footer text-subText border-customBorder'
-                      }`}>
-                        {post.post_type}
-                      </span>
-                      <span className="text-xs text-subText font-mono">
-                        {new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <h4 className="text-base font-bold text-mainText mt-2 group-hover:text-accent transition-colors flex items-center gap-1.5">
-                      {post.title} <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-accent" />
-                    </h4>
-                    <p className="text-xs text-subText/80 mt-1.5 line-clamp-2 leading-relaxed">
-                      {post.description}
+            {/* TAB 1: POSTS */}
+            {activeTab === 'posts' && (
+              <div className="space-y-4">
+                {posts.length === 0 ? (
+                  <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
+                    <Briefcase className="mx-auto text-subText/30 mb-2" size={32} />
+                    <p className="text-subText text-xs font-mono">
+                      {isOwnProfile ? "You haven't posted any updates yet." : `${profile.name} hasn't posted any updates.`}
                     </p>
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  posts.map((post) => (
+                    <PostCard key={post.id} postData={mapBackendPostToPostData(post)} />
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: PROJECTS */}
+            {activeTab === 'projects' && (
+              <div className="space-y-4">
+                {projects.length === 0 ? (
+                  <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
+                    <FolderGit2 className="mx-auto text-subText/30 mb-2" size={32} />
+                    <p className="text-subText text-xs font-mono">
+                      {isOwnProfile ? "You haven't created any projects yet." : `${profile.name} hasn't showcased any projects yet.`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {projects.map((proj) => (
+                      <PostCard key={proj.id} postData={mapBackendPostToPostData(proj)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: JOINED CLUBS */}
+            {activeTab === 'clubs' && (
+              <div className="space-y-4">
+                {clubs.length === 0 ? (
+                  <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
+                    <Building2 className="mx-auto text-subText/30 mb-2" size={32} />
+                    <p className="text-subText text-xs font-mono">
+                      {isOwnProfile ? "You haven't joined any campus clubs yet." : `${profile.name} is not a member of any clubs yet.`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {clubs.map((c) => (
+                      <Link
+                        key={c.id}
+                        to={`/club/${c.id}`}
+                        className="glass-panel rounded-2xl overflow-hidden border border-customBorder hover:border-accent/40 transition-all duration-300 group flex flex-col justify-between"
+                      >
+                         {c.details?.banner_url && (
+                           <div className="h-28 w-full overflow-hidden relative">
+                             <img src={c.details.banner_url} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
+                              {c.details?.category || 'club'}
+                            </div>
+                          </div>
+                        )}
+                        <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-bold text-mainText group-hover:text-accent transition-colors flex items-center gap-1">
+                                {c.title}
+                              </h4>
+                              {c.user_role && (
+                                <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-accent/10 border border-accent/30 text-accent">
+                                  {c.user_role}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-subText line-clamp-2 mt-1 leading-relaxed">
+                              {c.description}
+                            </p>
+                          </div>
+                          <div className="pt-2 border-t border-customBorder/40 flex items-center justify-between text-[11px] text-subText font-mono">
+                            <span>👥 {c.member_count} Members</span>
+                            <span className="text-accent font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
+                              View <ArrowUpRight className="w-3 h-3" />
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: REGISTERED EVENTS */}
+            {activeTab === 'events' && (
+              <div className="space-y-4">
+                {events.length === 0 ? (
+                  <div className="glass-panel text-center py-14 rounded-2xl border border-customBorder">
+                    <Calendar className="mx-auto text-subText/30 mb-2" size={32} />
+                    <p className="text-subText text-xs font-mono">
+                      {isOwnProfile ? "You haven't registered for any events yet." : `${profile.name} is not attending any events yet.`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {events.map((ev) => (
+                      <Link
+                        key={ev.id}
+                        to={`/event/${ev.id}`}
+                        className="glass-panel rounded-2xl overflow-hidden border border-customBorder hover:border-accent/40 transition-all duration-300 group flex flex-col justify-between"
+                      >
+                         {ev.details?.banner_url && (
+                           <div className="h-28 w-full overflow-hidden relative">
+                             <img src={ev.details?.banner_url} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
+                              {ev.event_type}
+                            </div>
+                          </div>
+                        )}
+                        <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-bold text-mainText group-hover:text-accent transition-colors">
+                                {ev.title}
+                              </h4>
+                              <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                                {ev.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-subText line-clamp-2 mt-1 leading-relaxed">
+                              {ev.short_description}
+                            </p>
+                          </div>
+                          <div className="pt-2 border-t border-customBorder/40 flex items-center justify-between text-[11px] text-subText font-mono">
+                            <span>📅 {new Date(ev.start_time).toLocaleString()}</span>
+                            <span className="text-accent font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
+                              Details <ArrowUpRight className="w-3 h-3" />
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         </div>

@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Eye, EyeOff, Loader2, AlertCircle, ArrowRight, User, Mail, Lock, BookOpen, FileText } from 'lucide-react';
+import { Cpu, Eye, EyeOff, Loader2, AlertCircle, ArrowRight, User, Mail, Lock, Hash, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 type Mode = 'login' | 'register';
 
-const DEPARTMENTS = [
-  'Computer Science & Engineering',
-  'Electrical Engineering',
-  'Mechanical Engineering',
-  'Robotics Engineering',
-  'Data Science & Analytics',
-  'Civil Engineering',
-  'Business Administration',
-  'Architecture',
-  'Mathematics & Physics',
-  'Other',
-];
-
-// ─── Field Component ──────────────────────────────────────────────────────────
+// ─── Shared Input Field ───────────────────────────────────────────────────────
 
 interface FieldProps {
   id: string;
@@ -29,18 +16,19 @@ interface FieldProps {
   placeholder?: string;
   icon: React.ReactNode;
   rightElement?: React.ReactNode;
+  hint?: string;
   required?: boolean;
 }
 
 const Field: React.FC<FieldProps> = ({
-  id, label, type = 'text', value, onChange, placeholder, icon, rightElement, required
+  id, label, type = 'text', value, onChange, placeholder, icon, rightElement, hint, required
 }) => (
   <div className="space-y-1.5">
     <label htmlFor={id} className="block text-xs font-semibold text-subText uppercase tracking-wider">
       {label}
     </label>
     <div className="relative">
-      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-subText/60 pointer-events-none">
+      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-subText/50 pointer-events-none">
         {icon}
       </span>
       <input
@@ -50,14 +38,13 @@ const Field: React.FC<FieldProps> = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="w-full bg-footer border border-customBorder text-mainText rounded-xl pl-9 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent placeholder:text-subText/40 transition-colors"
+        className="w-full bg-footer border border-customBorder text-mainText rounded-xl pl-9 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent placeholder:text-subText/30 transition-all duration-150"
       />
       {rightElement && (
-        <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
-          {rightElement}
-        </span>
+        <span className="absolute inset-y-0 right-0 pr-3 flex items-center">{rightElement}</span>
       )}
     </div>
+    {hint && <p className="text-[10px] font-mono text-subText/60 leading-relaxed">{hint}</p>}
   </div>
 );
 
@@ -72,22 +59,23 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Login fields
-  const [email, setEmail] = useState('');
+  // Shared
+  const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
 
-  // Register fields
+  // Register-only
   const [name, setName] = useState('');
-  const [department, setDepartment] = useState(DEPARTMENTS[0]);
+  const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const switchMode = (m: Mode) => {
     setMode(m);
     setError(null);
-    setEmail('');
+    setStudentId('');
     setPassword('');
     setName('');
+    setEmail('');
     setBio('');
     setConfirmPassword('');
   };
@@ -96,19 +84,23 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-
     try {
       if (mode === 'login') {
-        await login(email, password);
+        if (!studentId.trim() || studentId.trim().length !== 7 || !/^\d{7}$/.test(studentId.trim())) {
+          throw new Error('Student ID must be exactly 7 digits (e.g. 2604001)');
+        }
+        if (!email.trim()) {
+          throw new Error('Email address is required');
+        }
+        await login(studentId.trim(), email.trim(), password);
         navigate('/');
       } else {
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match');
+        if (!studentId.trim() || studentId.trim().length !== 7 || !/^\d{7}$/.test(studentId.trim())) {
+          throw new Error('Student ID must be exactly 7 digits (e.g. 2604001: 26=Batch, 04=CSE)');
         }
-        if (password.length < 6) {
-          throw new Error('Password must be at least 6 characters');
-        }
-        await register({ name, email, password, department, bio: bio || undefined });
+        if (password !== confirmPassword) throw new Error('Passwords do not match');
+        if (password.length < 6) throw new Error('Password must be at least 6 characters');
+        await register({ student_id: studentId.trim(), name, email, password, bio: bio || undefined });
         navigate('/');
       }
     } catch (err: any) {
@@ -122,87 +114,86 @@ const Login: React.FC = () => {
     <button
       type="button"
       onClick={() => setShowPassword((p) => !p)}
-      className="text-subText/60 hover:text-subText transition-colors cursor-pointer"
+      className="text-subText/50 hover:text-subText transition-colors cursor-pointer"
       tabIndex={-1}
     >
-      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-primary text-mainText flex transition-colors duration-200">
-      
+    <div className="min-h-screen bg-primary text-mainText flex">
+
       {/* ── Left Panel: Branding ── */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-card border-r border-customBorder p-12 relative overflow-hidden">
-        {/* Ambient gradient blobs */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-card border-r border-customBorder p-12 relative overflow-hidden">
+        {/* Ambient blobs */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-accent/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Logo */}
-        <div className="flex items-center gap-2 relative z-10">
-          <Settings className="w-7 h-7 text-accent" />
-          <span className="text-2xl font-black tracking-tight text-accent uppercase">
-            Campus<span className="text-mainText">Forge</span>
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+            <Cpu className="w-5 h-5 text-accent" />
+          </div>
+          <span className="text-xl font-black tracking-tight">
+            Campus<span className="text-accent">Forge</span>
           </span>
         </div>
 
-        {/* Hero Text */}
-        <div className="relative z-10 space-y-6">
-          <h2 className="text-4xl font-black tracking-tight leading-tight">
-            Build, connect,<br />
-            <span className="text-accent">and deploy</span><br />
-            your campus career.
-          </h2>
+        {/* Hero */}
+        <div className="relative z-10 space-y-5">
+          <div className="space-y-1">
+            <p className="text-[11px] font-mono text-accent/70 uppercase tracking-widest">Engineering Campus Hub</p>
+            <h2 className="text-4xl font-black tracking-tight leading-[1.15]">
+              Build, connect,<br />
+              <span className="text-accent">and ship</span><br />
+              together.
+            </h2>
+          </div>
           <p className="text-subText text-sm leading-relaxed max-w-xs">
-            The unified engineering hub for students, clubs, projects, and events. 
-            Real-time collaboration starts here.
+            One platform for students, clubs, events, and projects. Everything your campus life needs.
           </p>
-
-          {/* Feature pills */}
-          <div className="flex flex-wrap gap-2 pt-2">
-            {['🔬 Research Projects', '🏛️ Club Networks', '📅 Campus Events', '👥 Peer Connect'].map((f) => (
-              <span
-                key={f}
-                className="text-[11px] font-mono px-3 py-1.5 bg-footer border border-customBorder rounded-full text-subText"
-              >
+          <div className="flex flex-wrap gap-2 pt-1">
+            {['🔬 Projects', '🏛️ Clubs', '📅 Events', '👥 Students'].map((f) => (
+              <span key={f} className="text-[10px] font-mono px-3 py-1.5 bg-primary border border-customBorder rounded-full text-subText">
                 {f}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Bottom stat row */}
-        <div className="relative z-10 flex gap-8 border-t border-customBorder pt-8">
+        {/* Bottom stats */}
+        <div className="relative z-10 flex gap-8 border-t border-customBorder pt-6">
           {[['500+', 'Students'], ['40+', 'Active Clubs'], ['200+', 'Projects']].map(([num, label]) => (
             <div key={label}>
-              <p className="text-2xl font-black text-accent">{num}</p>
-              <p className="text-xs text-subText mt-0.5">{label}</p>
+              <p className="text-xl font-black text-accent">{num}</p>
+              <p className="text-[11px] text-subText mt-0.5">{label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── Right Panel: Form ── */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16">
+        <div className="w-full max-w-sm space-y-7">
 
           {/* Mobile logo */}
-          <div className="flex lg:hidden items-center gap-2">
-            <Settings className="w-6 h-6 text-accent" />
-            <span className="text-xl font-black tracking-tight text-accent uppercase">
-              Campus<span className="text-mainText">Forge</span>
-            </span>
+          <div className="flex lg:hidden items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <Cpu className="w-4 h-4 text-accent" />
+            </div>
+            <span className="text-lg font-black">Campus<span className="text-accent">Forge</span></span>
           </div>
 
           {/* Heading */}
           <div>
             <h1 className="text-2xl font-black tracking-tight">
-              {mode === 'login' ? 'Welcome back' : 'Create account'}
+              {mode === 'login' ? 'Welcome back' : 'Join the hub'}
             </h1>
             <p className="text-subText text-sm mt-1">
               {mode === 'login'
-                ? 'Sign in to access your campus hub.'
-                : 'Join the CampusForge network today.'}
+                ? 'Sign in with your Student ID, Email, and Password.'
+                : 'Create your campus identity today.'}
             </p>
           </div>
 
@@ -213,7 +204,7 @@ const Login: React.FC = () => {
                 key={m}
                 type="button"
                 onClick={() => switchMode(m)}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all cursor-pointer capitalize ${
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer capitalize ${
                   mode === m
                     ? 'bg-card text-accent shadow-sm'
                     : 'text-subText hover:text-mainText'
@@ -226,15 +217,16 @@ const Login: React.FC = () => {
 
           {/* Error Banner */}
           {error && (
-            <div className="flex items-start gap-3 px-4 py-3 bg-red-900/20 border border-red-500/40 rounded-xl text-xs">
-              <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
-              <span className="text-red-300">{error}</span>
+            <div className="flex items-start gap-2.5 px-3.5 py-3 bg-rose-900/15 border border-rose-500/30 rounded-xl text-xs">
+              <AlertCircle size={13} className="text-rose-400 shrink-0 mt-0.5" />
+              <span className="text-rose-300 leading-relaxed">{error}</span>
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
 
+            {/* Register: Name first */}
             {mode === 'register' && (
               <Field
                 id="name"
@@ -242,22 +234,40 @@ const Login: React.FC = () => {
                 value={name}
                 onChange={setName}
                 placeholder="e.g. Alex Rivera"
-                icon={<User size={15} />}
+                icon={<User size={14} />}
                 required
               />
             )}
 
+            {/* Student ID — always shown */}
+            <Field
+              id="studentId"
+              label="Student ID"
+              value={studentId}
+              onChange={setStudentId}
+              placeholder="e.g. 2604001"
+              icon={<Hash size={14} />}
+              hint={
+                mode === 'register'
+                  ? 'Format: 7 digits — YY = Batch, PP = Dept, NNN = Roll (e.g. 2604001 = Batch 26, CSE)'
+                  : 'Your 7-digit campus student ID'
+              }
+              required
+            />
+
+            {/* Email — required for both login & register */}
             <Field
               id="email"
-              label="Email"
+              label="Email Address"
               type="email"
               value={email}
               onChange={setEmail}
               placeholder="you@campus.edu"
-              icon={<Mail size={15} />}
+              icon={<Mail size={14} />}
               required
             />
 
+            {/* Password */}
             <Field
               id="password"
               label="Password"
@@ -265,11 +275,12 @@ const Login: React.FC = () => {
               value={password}
               onChange={setPassword}
               placeholder="••••••••"
-              icon={<Lock size={15} />}
+              icon={<Lock size={14} />}
               rightElement={eyeBtn}
               required
             />
 
+            {/* Register: Confirm password + bio */}
             {mode === 'register' && (
               <>
                 <Field
@@ -279,76 +290,52 @@ const Login: React.FC = () => {
                   value={confirmPassword}
                   onChange={setConfirmPassword}
                   placeholder="••••••••"
-                  icon={<Lock size={15} />}
+                  icon={<Lock size={14} />}
                   required
                 />
 
-                {/* Department Select */}
-                <div className="space-y-1.5">
-                  <label htmlFor="department" className="block text-xs font-semibold text-subText uppercase tracking-wider">
-                    Department
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-subText/60 pointer-events-none">
-                      <BookOpen size={15} />
-                    </span>
-                    <select
-                      id="department"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      required
-                      className="w-full bg-footer border border-customBorder text-mainText rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors cursor-pointer appearance-none"
-                    >
-                      {DEPARTMENTS.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Bio textarea */}
                 <div className="space-y-1.5">
                   <label htmlFor="bio" className="block text-xs font-semibold text-subText uppercase tracking-wider">
                     Bio <span className="text-subText/40 normal-case font-normal">(optional)</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute top-2.5 left-0 pl-3 flex items-start text-subText/60 pointer-events-none">
-                      <FileText size={15} />
+                    <span className="absolute top-2.5 left-3 text-subText/50 pointer-events-none">
+                      <FileText size={14} />
                     </span>
                     <textarea
                       id="bio"
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
-                      placeholder="Tell the campus a bit about yourself..."
+                      placeholder="Tell the campus about yourself..."
                       rows={2}
-                      className="w-full bg-footer border border-customBorder text-mainText rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent placeholder:text-subText/40 resize-none transition-colors"
+                      className="w-full bg-footer border border-customBorder text-mainText rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent placeholder:text-subText/30 resize-none transition-all"
                     />
                   </div>
                 </div>
               </>
             )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-primary font-black text-sm rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mt-2 shadow-lg shadow-accent/20"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-white font-black text-sm rounded-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mt-2 shadow-lg shadow-accent/20"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin" />
                   {mode === 'login' ? 'Signing in...' : 'Creating account...'}
                 </>
               ) : (
                 <>
                   {mode === 'login' ? 'Sign In' : 'Create Account'}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={15} />
                 </>
               )}
             </button>
           </form>
 
-          {/* Switch mode link */}
+          {/* Switch mode */}
           <p className="text-center text-xs text-subText">
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
