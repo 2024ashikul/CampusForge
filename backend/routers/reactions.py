@@ -1,93 +1,66 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from typing import List
 
-from database import get_db
-from models import PostReactionModel, PostModel, UserModel
-from schemas import PostReactionCreate, PostReactionResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from auth import get_current_user
+from database import get_db
+from schemas import PostReactionCreate, PostReactionResponse
 
 router = APIRouter(prefix="/posts/{post_id}/reactions", tags=["Reactions"])
-
 VALID_REACTIONS = {"heart", "like", "fire", "clap"}
 
 
 @router.get("", response_model=List[PostReactionResponse])
-def get_reactions(
-    post_id: int,
-    db: Session = Depends(get_db),
-):
-    """List all reactions for a post."""
-    post = db.query(PostModel).filter(PostModel.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return db.query(PostReactionModel).filter(PostReactionModel.post_id == post_id).all()
+def get_reactions(post_id: int, db=Depends(get_db)):
+    if not db.one("SELECT 1 FROM posts WHERE id = ?", (post_id,)):
+        raise HTTPException(404, "Post not found")
+    return [
+        r.__dict__ for r in db.all("SELECT * FROM post_reactions WHERE post_id = ?", (post_id,))
+    ]
 
 
 @router.post("", response_model=PostReactionResponse, status_code=status.HTTP_201_CREATED)
 def add_or_update_reaction(
     post_id: int,
     reaction_in: PostReactionCreate,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    """
-    Add a reaction to a post. If the user already reacted:
-    - Same reaction_type → remove it (toggle off).
-    - Different reaction_type → switch to new type.
-    """
     if reaction_in.reaction_type not in VALID_REACTIONS:
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid reaction_type. Must be one of: {', '.join(sorted(VALID_REACTIONS))}"
+            400, f"Invalid reaction_type. Must be one of: {', '.join(sorted(VALID_REACTIONS))}"
         )
-
-    post = db.query(PostModel).filter(PostModel.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-
-    existing = db.query(PostReactionModel).filter(
-        PostReactionModel.post_id == post_id,
-        PostReactionModel.user_id == current_user.student_id
-    ).first()
-
-    if existing:
-        if existing.reaction_type == reaction_in.reaction_type:
-            # Toggle off — remove reaction
-            db.delete(existing)
-            db.commit()
-            raise HTTPException(status_code=204, detail="Reaction removed")
-        else:
-            # Switch reaction type
-            existing.reaction_type = reaction_in.reaction_type
-            db.commit()
-            db.refresh(existing)
-            return existing
-
-    reaction = PostReactionModel(
-        post_id=post_id,
-        user_id=current_user.student_id,
-        reaction_type=reaction_in.reaction_type,
+    if not db.one("SELECT 1 FROM posts WHERE id = ?", (post_id,)):
+        raise HTTPException(404, "Post not found")
+    existing = db.one(
+        "SELECT * FROM post_reactions WHERE post_id = ? AND user_id = ?",
+        (post_id, current_user.student_id),
     )
-    db.add(reaction)
+    if existing and existing.reaction_type == reaction_in.reaction_type:
+        db.execute("DELETE FROM post_reactions WHERE id = ?", (existing.id,))
+        db.commit()
+        raise HTTPException(204, "Reaction removed")
+    if existing:
+        db.execute(
+            "UPDATE post_reactions SET reaction_type = ? WHERE id = ?",
+            (reaction_in.reaction_type, existing.id),
+        )
+        db.commit()
+        return db.one("SELECT * FROM post_reactions WHERE id = ?", (existing.id,)).__dict__
+    cursor = db.execute(
+        "INSERT INTO post_reactions (post_id, user_id, reaction_type) VALUES (?, ?, ?)",
+        (post_id, current_user.student_id, reaction_in.reaction_type),
+    )
     db.commit()
-    db.refresh(reaction)
-    return reaction
+    return db.one("SELECT * FROM post_reactions WHERE id = ?", (cursor.lastrowid,)).__dict__
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
-def remove_reaction(
-    post_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
-):
-    """Explicitly remove current user's reaction from a post."""
-    existing = db.query(PostReactionModel).filter(
-        PostReactionModel.post_id == post_id,
-        PostReactionModel.user_id == current_user.student_id
-    ).first()
-    if not existing:
-        raise HTTPException(status_code=404, detail="No reaction found to remove")
-    db.delete(existing)
+def remove_reaction(post_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    cursor = db.execute(
+        "DELETE FROM post_reactions WHERE post_id = ? AND user_id = ?",
+        (post_id, current_user.student_id),
+    )
+    if not cursor.rowcount:
+        raise HTTPException(404, "No reaction found to remove")
     db.commit()
-    return None

@@ -1,14 +1,9 @@
-"""SMTP delivery for member announcement notifications.
-
-Set SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD and SMTP_FROM in the
-backend environment to enable delivery. Leaving SMTP_HOST unset keeps local
-development safe: announcements are still published but no email is sent.
-"""
 import logging
 import os
 import smtplib
 from email.message import EmailMessage
 from typing import Iterable
+
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -20,8 +15,12 @@ def email_delivery_enabled() -> bool:
 
 
 def send_announcement_emails(
-    recipients: Iterable[str], *, organization_name: str, announcement_title: str,
-    announcement_body: str, announcement_kind: str,
+    recipients: Iterable[str],
+    *,
+    organization_name: str,
+    announcement_title: str,
+    announcement_body: str,
+    announcement_kind: str,
 ) -> None:
     """Send one addressed email per recipient; failures do not undo a post."""
     recipients = list(dict.fromkeys(email for email in recipients if email))

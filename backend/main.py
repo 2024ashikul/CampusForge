@@ -1,14 +1,16 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routers import users, clubs, posts, auth, events, comments, reactions, uploads, skills
+
 from init_db import init_db
-import os
+from routers import auth, clubs, comments, events, posts, reactions, skills, uploads, users
 
 app = FastAPI(
     title="CampusForge API",
     description="FastAPI Backend for CampusForge — JWT-authenticated campus platform.",
-    version="3.0.0"
+    version="3.0.0",
 )
 
 # Enable CORS for frontend integration
@@ -48,7 +50,7 @@ def root():
     return {
         "message": "CampusForge FastAPI Backend Running",
         "docs": "/docs",
-        "health": "/api/health"
+        "health": "/api/health",
     }
 
 
