@@ -15,6 +15,7 @@ import ClubProfile from './pages/Clubs';
 import UserProfileView from './pages/Profile';
 import Projects from './pages/Projects';
 import Login from './pages/Login';
+import Skills from './pages/Skills';
 import { Loader2 } from 'lucide-react';
 
 // ─── App Routes ────────────────────────────────────────────────────────────────
@@ -37,6 +38,8 @@ function AppRoutes() {
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
             <Route path="/students" element={<Students />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/skills/:skillName" element={<Skills />} />
             <Route path="/club/:clubid" element={<Club />} />
             <Route path="/event/:eventid" element={<Event />} />
             <Route path="/profile/:profileid" element={<UserProfileView />} />

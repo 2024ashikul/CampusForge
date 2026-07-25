@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routers import users, clubs, posts, auth, events, comments, reactions, uploads
+from routers import users, clubs, posts, auth, events, comments, reactions, uploads, skills
 from init_db import init_db
 import os
 
@@ -28,6 +28,7 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 # Register API Routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(skills.router, prefix="/api")
 app.include_router(clubs.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")

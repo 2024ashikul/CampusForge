@@ -40,7 +40,6 @@ class UserModel(Base):
     password = Column(String(255), nullable=False)
     profile_pic = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
-    skills = Column(Text, nullable=True)    # JSON: [{"name": str, "level": str}]
     socials = Column(Text, nullable=True)   # JSON: {"github": "...", "linkedin": "...", ...}
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -49,6 +48,20 @@ class UserModel(Base):
     event_registrations = relationship("EventRegistrantModel", back_populates="user", cascade="all, delete-orphan")
     comments = relationship("CommentModel", back_populates="author", cascade="all, delete-orphan")
     reactions = relationship("PostReactionModel", back_populates="user", cascade="all, delete-orphan")
+    skills = relationship("SkillModel", back_populates="user", cascade="all, delete-orphan", order_by="SkillModel.skill")
+
+
+# ---------------------------------------------------------------------------
+# Skills — one user can list many skills, each with a proficiency level.
+# ---------------------------------------------------------------------------
+class SkillModel(Base):
+    __tablename__ = "skills"
+
+    user_id = Column(String(20), ForeignKey("user.student_id", ondelete="CASCADE"), primary_key=True)
+    skill = Column(String(100), primary_key=True)
+    skill_level = Column(String(20), nullable=False, default="Beginner")
+
+    user = relationship("UserModel", back_populates="skills")
 
 
 # ---------------------------------------------------------------------------

@@ -137,17 +137,11 @@ export default function EventsPage() {
     return output;
   }, [eventsList, selectedTag, statusFilter, searchQuery, sortBy]);
 
-  const metrics = useMemo(() => ({
-    total: eventsList.length,
-    upcoming: eventsList.filter((e) => e.status === 'upcoming').length,
-    completed: eventsList.filter((e) => e.status === 'completed').length,
-  }), [eventsList]);
-
   return (
     <div className="page-container">
       <Toast message={notification} />
 
-      <header className="page-header flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+      <header className="page-header">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <CalendarDays className="w-5 h-5 text-accent" />
@@ -157,20 +151,6 @@ export default function EventsPage() {
           <p className="page-subtitle">
             Workshops, hackathons, and competitions hosted by campus clubs — register and participate.
           </p>
-        </div>
-        <div className="metric-strip">
-          <div className="metric-item">
-            <span className="metric-item-label">Total</span>
-            <span className="metric-item-value">{metrics.total}</span>
-          </div>
-          <div className="metric-item">
-            <span className="metric-item-label text-accent">Upcoming</span>
-            <span className="metric-item-value text-accent">{metrics.upcoming}</span>
-          </div>
-          <div className="metric-item">
-            <span className="metric-item-label">Past</span>
-            <span className="metric-item-value">{metrics.completed}</span>
-          </div>
         </div>
       </header>
 
@@ -211,7 +191,7 @@ export default function EventsPage() {
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="filter-chip-row">
           {allUniqueTags.map((tag) => (
             <button
               key={tag}

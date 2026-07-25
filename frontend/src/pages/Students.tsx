@@ -90,18 +90,12 @@ export const Students: React.FC = () => {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <header className="border-b border-customBorder pb-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <header className="border-b border-customBorder pb-6 mb-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight mb-1 flex items-center gap-3 glow-text">
-              <Users className="w-8 h-8 text-accent" /> Student & Skill Directory
-            </h1>
-            <p className="text-subText text-xs font-mono">
-              Explore peer skill matrix, filter by proficiency level, and connect with technical collaborators.
-            </p>
+            <div className="flex items-center gap-2 mb-2"><Users className="w-5 h-5 text-accent" /><span className="text-xs font-bold uppercase tracking-widest text-accent">Campus network</span></div>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Student directory</h1>
+            <p className="text-subText text-sm">Find collaborators by department, skill, and shared interests.</p>
           </div>
-          <span className="text-xs font-mono px-3 py-1 bg-accent/10 border border-accent/30 text-accent rounded-full self-start md:self-auto">
-            {profiles.length} Total Registered Members
-          </span>
         </header>
 
         {/* Futuristic Search & Filters Panel */}
@@ -134,7 +128,7 @@ export const Students: React.FC = () => {
             <span className="block text-subText text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
               <Filter className="w-3 h-3 text-accent" /> Filter by Department
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="filter-chip-row">
               {allDepartments.map((dept) => (
                 <button
                   key={dept}
@@ -157,18 +151,18 @@ export const Students: React.FC = () => {
               <span className="block text-subText text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-accent" /> Filter by Specific Skill
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="filter-chip-row">
                 {allSkills.map((sk) => (
                   <button
                     key={sk}
-                    onClick={() => setSelectedSkillFilter(sk)}
+                    onClick={() => sk === 'All' ? setSelectedSkillFilter(sk) : navigate(`/skills/${encodeURIComponent(sk)}`)}
                     className={`px-3 py-1 text-xs font-medium rounded-xl border transition-all cursor-pointer ${
                       selectedSkillFilter === sk
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.25)]'
                         : 'bg-primary/40 border-customBorder text-subText hover:text-mainText hover:border-cyan-500/40'
                     }`}
                   >
-                    {sk}
+                    {sk}{sk !== 'All' && ' ↗'}
                   </button>
                 ))}
               </div>
@@ -247,9 +241,9 @@ export const Students: React.FC = () => {
                       <span className="text-[10px] text-subText/40 italic font-mono">No skills listed</span>
                     ) : (
                       profile.skills.slice(0, 3).map((sk) => (
-                        <span key={sk.name} className={`skill-badge text-[10px] py-0.5 px-2 ${getSkillBadgeClass(sk.level)}`}>
+                        <button key={sk.name} onClick={(event) => { event.stopPropagation(); navigate(`/skills/${encodeURIComponent(sk.name)}`); }} className={`skill-badge text-[10px] py-0.5 px-2 cursor-pointer hover:brightness-125 ${getSkillBadgeClass(sk.level)}`}>
                           {sk.name} <span className="opacity-70 font-mono">({sk.level[0]})</span>
-                        </span>
+                        </button>
                       ))
                     )}
                     {profile.skills && profile.skills.length > 3 && (

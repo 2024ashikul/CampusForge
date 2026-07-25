@@ -6,6 +6,12 @@ import { deriveDepartment } from '../interfaces/student.type';
 
 export { type BackendPost, type BackendComment, type BackendClub, type BackendEvent, type BackendUser, type SkillLevel, type Skill };
 
+export interface SkillSummary { skill: string; student_count: number; }
+export interface SkillStudent {
+  student_id: string; name: string; email: string; department: string;
+  profile_pic?: string | null; bio?: string | null; skill: string; skill_level: SkillLevel;
+}
+
 export const API_BASE_URL = 'http://localhost:8000/api';
 
 // ─── Auth Header Helper ───────────────────────────────────────────────────────
@@ -521,6 +527,23 @@ export async function getUsersApi(): Promise<BackendUser[]> {
     console.warn('[API Warning] Could not fetch users.', error);
     return [];
   }
+}
+
+export async function getSkillsApi(): Promise<SkillSummary[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/skills`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return res.json();
+  } catch (error) { console.warn('[API Warning] Could not fetch skills.', error); return []; }
+}
+
+export async function getStudentsBySkillApi(skill: string): Promise<SkillStudent[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/skills/${encodeURIComponent(skill)}`, { headers: getAuthHeaders() });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return res.json();
+  } catch (error) { console.warn('[API Warning] Could not fetch students for skill.', error); return []; }
 }
 
 export async function getUserByIdApi(userId: string): Promise<BackendUser | null> {

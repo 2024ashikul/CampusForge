@@ -26,6 +26,7 @@ import {
   getUserEventsApi,
   updateUserApi,
   uploadFileApi,
+  getSkillsApi,
   mapBackendPostToPostData,
   type BackendUser,
   type BackendPost,
@@ -65,6 +66,7 @@ export const UserProfileView: React.FC = () => {
   const [skillsList, setSkillsList] = useState<Skill[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('Intermediate');
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const [isUploadingPic, setIsUploadingPic] = useState(false);
@@ -122,6 +124,10 @@ export const UserProfileView: React.FC = () => {
     }
     load();
   }, [userId]);
+
+  useEffect(() => {
+    getSkillsApi().then((skills) => setSkillSuggestions(skills.map((skill) => skill.skill)));
+  }, []);
 
   const handleAddSkill = () => {
     if (!newSkillName.trim()) return;
@@ -381,11 +387,15 @@ export const UserProfileView: React.FC = () => {
                   <div className="flex flex-col gap-2">
                     <input
                       type="text"
+                      list="skill-suggestions"
                       placeholder="Skill name (e.g. React, Python)"
                       value={newSkillName}
                       onChange={(e) => setNewSkillName(e.target.value)}
                       className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
                     />
+                    <datalist id="skill-suggestions">
+                      {skillSuggestions.map((skill) => <option key={skill} value={skill} />)}
+                    </datalist>
                     <div className="flex gap-2">
                       <select
                         value={newSkillLevel}
@@ -424,7 +434,7 @@ export const UserProfileView: React.FC = () => {
                       className="bg-primary/50 border border-customBorder rounded-xl px-3 py-2.5"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-mainText">{skill.name}</span>
+                        <Link to={`/skills/${encodeURIComponent(skill.name)}`} className="text-xs font-bold text-mainText hover:text-accent transition-colors">{skill.name}</Link>
                         <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           skill.level === 'Advanced' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :

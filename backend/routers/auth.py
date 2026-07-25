@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import UserModel, DEPARTMENT_CODES, derive_department
+from models import UserModel, SkillModel, DEPARTMENT_CODES, derive_department
 from schemas import UserCreate, UserResponse, Token, LoginRequest
 from auth import (
     get_password_hash,
@@ -20,12 +20,7 @@ STUDENT_ID_PATTERN = re.compile(r"^\d{7}$")
 
 
 def format_user_dict(user: UserModel) -> dict:
-    skills_data = []
-    if user.skills:
-        try:
-            skills_data = json.loads(user.skills)
-        except Exception:
-            skills_data = []
+    skills_data = [{"name": skill.skill, "level": skill.skill_level} for skill in user.skills]
     socials_data = None
     if user.socials:
         try:
@@ -64,7 +59,6 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="User with this email already exists")
 
     hashed_pw = get_password_hash(user_in.password)
-    skills_str = json.dumps([s.model_dump() for s in user_in.skills]) if user_in.skills else None
     socials_str = json.dumps(user_in.socials) if user_in.socials else None
 
     new_user = UserModel(
@@ -74,10 +68,14 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         password=hashed_pw,
         profile_pic=user_in.profile_pic,
         bio=user_in.bio,
-        skills=skills_str,
         socials=socials_str,
     )
     db.add(new_user)
+    db.flush()
+    db.add_all([
+        SkillModel(user_id=new_user.student_id, skill=skill.name.strip(), skill_level=skill.level)
+        for skill in user_in.skills or []
+    ])
     db.commit()
     db.refresh(new_user)
     return format_user_dict(new_user)

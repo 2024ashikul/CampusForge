@@ -22,9 +22,16 @@ CREATE TABLE IF NOT EXISTS [user] (
     [bio]         TEXT,
     [is_active]   INTEGER NOT NULL DEFAULT 0,
     [department]  TEXT    NOT NULL,          -- auto-derived from student_id
-    [skills]      TEXT,                      -- JSON: [{"name": str, "level": str}]
     [socials]     TEXT,                      -- JSON: {"github": "...", "linkedin": "...", ...}
     [created_at]  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- A user's skills and proficiency. Each skill belongs to exactly one user.
+CREATE TABLE IF NOT EXISTS [skills] (
+    [user_id]     TEXT NOT NULL REFERENCES [user]([student_id]) ON DELETE CASCADE,
+    [skill]       TEXT NOT NULL,
+    [skill_level] TEXT NOT NULL DEFAULT 'Beginner',
+    PRIMARY KEY ([user_id], [skill])
 );
 
 -- ---------------------------------------------------------------------------

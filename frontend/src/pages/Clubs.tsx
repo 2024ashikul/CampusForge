@@ -108,14 +108,6 @@ export default function CampusForgeClubsPage() {
     return output;
   }, [clubsList, selectedCategory, searchQuery, sortBy]);
 
-  const metrics = useMemo(
-    () => ({
-      total: clubsList.length,
-      totalMembers: clubsList.reduce((s, c) => s + c.memberCount, 0),
-    }),
-    [clubsList]
-  );
-
   const handleCreateClub = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingClub(true);
@@ -169,17 +161,7 @@ export default function CampusForgeClubsPage() {
             Browse student organizations, join clubs, and connect with peers who share your interests.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="metric-strip text-xs">
-            <div className="metric-item">
-              <span className="metric-item-label text-subText">Clubs: </span>
-              <span className="metric-item-value font-semibold">{metrics.total}</span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-item-label text-subText">Members: </span>
-              <span className="metric-item-value font-semibold">{metrics.totalMembers}</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
           <button onClick={() => setIsCreateClubOpen(true)} className="btn-primary text-xs px-3 py-2 flex items-center gap-1.5">
             <Plus className="w-4 h-4" /> Create Club
           </button>
@@ -210,7 +192,7 @@ export default function CampusForgeClubsPage() {
           </select>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="filter-chip-row">
           {categories.map((cat) => (
             <button
               key={cat}

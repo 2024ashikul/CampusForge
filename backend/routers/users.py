@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from database import get_db
-from models import UserModel, ClubMemberModel, ClubModel, EventRegistrantModel, EventModel, derive_department
+from models import UserModel, SkillModel, ClubMemberModel, ClubModel, EventRegistrantModel, EventModel, derive_department
 from auth import get_password_hash, get_current_user, get_optional_current_user
 from schemas import UserCreate, UserResponse, UserUpdate, ClubResponse, EventResponse
 from routers.clubs import format_club_response
@@ -14,12 +14,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 def format_user_dict(user: UserModel) -> dict:
-    skills_data = []
-    if user.skills:
-        try:
-            skills_data = json.loads(user.skills)
-        except Exception:
-            skills_data = []
+    skills_data = [{"name": skill.skill, "level": skill.skill_level} for skill in user.skills]
     socials_data = None
     if user.socials:
         try:
@@ -103,7 +98,11 @@ def update_user(
     if updates.profile_pic is not None:
         user.profile_pic = updates.profile_pic
     if updates.skills is not None:
-        user.skills = json.dumps([s.model_dump() for s in updates.skills])
+        db.query(SkillModel).filter(SkillModel.user_id == user.student_id).delete()
+        db.add_all([
+            SkillModel(user_id=user.student_id, skill=skill.name.strip(), skill_level=skill.level)
+            for skill in updates.skills
+        ])
     if updates.socials is not None:
         user.socials = json.dumps(updates.socials)
     db.commit()

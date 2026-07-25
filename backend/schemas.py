@@ -19,6 +19,20 @@ class SkillSchema(BaseModel):
     name: str
     level: str  # 'Beginner' | 'Intermediate' | 'Advanced'
 
+class SkillSummary(BaseModel):
+    skill: str
+    student_count: int
+
+class SkillStudentResponse(BaseModel):
+    student_id: str
+    name: str
+    email: str
+    department: str
+    profile_pic: Optional[str] = None
+    bio: Optional[str] = None
+    skill: str
+    skill_level: str
+
 
 # ---------------------------------------------------------------------------
 # User Schemas

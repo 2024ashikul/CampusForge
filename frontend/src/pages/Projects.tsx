@@ -52,15 +52,6 @@ export const Projects: React.FC = () => {
     return ['All', ...Array.from(tagsSet)];
   }, [projects]);
 
-  // --- Metrics Aggregator Block ---
-  const metrics = useMemo(() => {
-    return {
-      total: projects.length,
-      studentInitiatives: projects.filter((p) => p.author.association === 'STUDENT').length,
-      clubDeployments: projects.filter((p) => p.author.association === 'CLUB').length,
-    };
-  }, [projects]);
-
   // --- Data Transformation Pipeline (Filter & Sort) ---
   const filteredAndSortedProjects = useMemo(() => {
     let output = [...projects];
@@ -150,33 +141,13 @@ export const Projects: React.FC = () => {
     <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-8 transition-colors duration-200">
       <div className="max-w-6xl mx-auto">
         
-        {/* --- Header & Compact Metrics Block Section --- */}
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-customBorder pb-6 mb-8 gap-4">
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between border-b border-customBorder pb-6 mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight mb-1">Project Showcase</h1>
-            <p className="text-subText text-sm">Explore, filter, and review active student engineering systems & software projects.</p>
+            <div className="flex items-center gap-2 mb-2"><span className="text-xs font-bold uppercase tracking-widest text-accent">Campus projects</span></div>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Project Showcase</h1>
+            <p className="text-subText text-sm">Explore student-built systems, prototypes, and software projects.</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Inline Numeric Counter Panel */}
-            <div className="flex items-center gap-2 bg-card border border-customBorder rounded-xl p-2.5 shadow-sm">
-              <div className="px-3 py-1 bg-footer rounded-lg text-center">
-                <span className="block text-[10px] text-subText font-bold uppercase tracking-wider">Total</span>
-                <span className="text-sm font-black text-mainText">{metrics.total}</span>
-              </div>
-              <div className="w-px h-6 bg-customBorder" />
-              <div className="px-3 py-1 bg-footer rounded-lg text-center">
-                <span className="block text-[10px] text-accent font-bold uppercase tracking-wider">Students</span>
-                <span className="text-sm font-black text-accent">{metrics.studentInitiatives}</span>
-              </div>
-              <div className="w-px h-6 bg-customBorder" />
-              <div className="px-3 py-1 bg-footer rounded-lg text-center">
-                <span className="block text-[10px] text-subText font-bold uppercase tracking-wider">Clubs</span>
-                <span className="text-sm font-black text-subText">{metrics.clubDeployments}</span>
-              </div>
-            </div>
-
-            {/* Launch Modal Action Trigger */}
+          <div>
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-4 py-2.5 bg-accent text-primary text-xs font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap h-fit"
@@ -241,7 +212,7 @@ export const Projects: React.FC = () => {
             <span className="block text-subText text-[11px] font-bold uppercase tracking-wider mb-2">
               Filter by Engineering Meta Tag
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="filter-chip-row">
               {allUniqueTags.map((tag) => (
                 <button
                   key={tag}

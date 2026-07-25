@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cpu, Sun, Moon, LogOut, Menu, X, LayoutDashboard, Users, FolderKanban, CalendarDays, Building2 } from 'lucide-react';
+import { Cpu, Sun, Moon, LogOut, Menu, X, LayoutDashboard, Users, FolderKanban, CalendarDays, Building2, Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -24,6 +24,7 @@ export const Navbar: React.FC = () => {
     { name: 'Events', href: '/events', icon: <CalendarDays className="w-4 h-4" /> },
     { name: 'Projects', href: '/projects', icon: <FolderKanban className="w-4 h-4" /> },
     { name: 'Students', href: '/students', icon: <Users className="w-4 h-4" /> },
+    { name: 'Skills', href: '/skills', icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   const handleLogout = () => {

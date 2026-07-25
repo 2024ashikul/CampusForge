@@ -3,12 +3,21 @@
 
 CREATE TABLE IF NOT EXISTS user (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(20) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     profile_pic VARCHAR(500) NULL,
     department VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS skills (
+    user_id VARCHAR(20) NOT NULL,
+    skill VARCHAR(100) NOT NULL,
+    skill_level VARCHAR(20) NOT NULL DEFAULT 'Beginner',
+    PRIMARY KEY (user_id, skill),
+    FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS club (

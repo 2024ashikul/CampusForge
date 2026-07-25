@@ -4,7 +4,7 @@ from database import engine, SessionLocal, Base
 from models import (
     UserModel, ClubModel, PostModel, PostTagModel, PostMediaModel,
     EventModel, ClubMemberModel, EventRegistrantModel,
-    CommentModel, PostReactionModel
+    CommentModel, PostReactionModel, SkillModel
 )
 from auth import get_password_hash
 
@@ -12,6 +12,27 @@ from auth import get_password_hash
 def init_db():
     print("[Init DB] Creating tables...")
     Base.metadata.create_all(bind=engine)
+    # Migrate the pre-v3.1 JSON user.skills column when it is present.  The
+    # column is deliberately no longer mapped; skills now live in their own
+    # one-to-many table.
+    user_columns = {column["name"] for column in inspect(engine).get_columns("user")}
+    if "skills" in user_columns:
+        with engine.begin() as connection:
+            legacy_users = connection.execute(text('SELECT student_id, skills FROM "user" WHERE skills IS NOT NULL')).mappings()
+            for legacy_user in legacy_users:
+                try:
+                    legacy_skills = json.loads(legacy_user["skills"])
+                except (TypeError, json.JSONDecodeError):
+                    legacy_skills = []
+                for skill in legacy_skills if isinstance(legacy_skills, list) else []:
+                    name = str(skill.get("name", "")).strip() if isinstance(skill, dict) else ""
+                    level = str(skill.get("level", "Beginner")) if isinstance(skill, dict) else "Beginner"
+                    if name:
+                        connection.execute(text(
+                            "INSERT INTO skills (user_id, skill, skill_level) "
+                            "SELECT :user_id, :skill, :skill_level "
+                            "WHERE NOT EXISTS (SELECT 1 FROM skills WHERE user_id = :user_id AND skill = :skill)"
+                        ), {"user_id": legacy_user["student_id"], "skill": name, "skill_level": level})
     # Lightweight development migration for existing SQLite databases.
     columns = {column["name"] for column in inspect(engine).get_columns("posts")}
     if "event_id" not in columns:
@@ -37,12 +58,6 @@ def init_db():
             password=get_password_hash("password123"),
             profile_pic="👨‍💻",
             bio="Systems engineering enthusiast and platform developer.",
-            skills=json.dumps([
-                {"name": "Python", "level": "Advanced"},
-                {"name": "React", "level": "Intermediate"},
-                {"name": "C++", "level": "Beginner"},
-                {"name": "RTOS", "level": "Advanced"},
-            ]),
             socials=json.dumps({
                 "github": "https://github.com/alexrivera",
                 "linkedin": "https://linkedin.com/in/alexrivera",
@@ -55,12 +70,6 @@ def init_db():
             password=get_password_hash("password123"),
             profile_pic="👩‍💻",
             bio="UI/UX design architect and web developer.",
-            skills=json.dumps([
-                {"name": "UI/UX Design", "level": "Advanced"},
-                {"name": "Figma", "level": "Advanced"},
-                {"name": "TypeScript", "level": "Intermediate"},
-                {"name": "Tailwind CSS", "level": "Advanced"},
-            ]),
             socials=json.dumps({
                 "github": "https://github.com/sarahchen",
                 "twitter": "https://twitter.com/sarahchen",
@@ -74,11 +83,6 @@ def init_db():
             password=get_password_hash("password123"),
             profile_pic="⚙️",
             bio="Robotics and embedded systems engineer.",
-            skills=json.dumps([
-                {"name": "C++", "level": "Advanced"},
-                {"name": "ROS", "level": "Advanced"},
-                {"name": "SolidWorks", "level": "Intermediate"},
-            ]),
             socials=json.dumps({
                 "github": "https://github.com/marcusvance",
                 "linkedin": "https://linkedin.com/in/marcusvance",
@@ -89,6 +93,20 @@ def init_db():
         db.refresh(u1)
         db.refresh(u2)
         db.refresh(u3)
+        db.add_all([
+            SkillModel(user_id=u1.student_id, skill="Python", skill_level="Advanced"),
+            SkillModel(user_id=u1.student_id, skill="React", skill_level="Intermediate"),
+            SkillModel(user_id=u1.student_id, skill="C++", skill_level="Beginner"),
+            SkillModel(user_id=u1.student_id, skill="RTOS", skill_level="Advanced"),
+            SkillModel(user_id=u2.student_id, skill="UI/UX Design", skill_level="Advanced"),
+            SkillModel(user_id=u2.student_id, skill="Figma", skill_level="Advanced"),
+            SkillModel(user_id=u2.student_id, skill="TypeScript", skill_level="Intermediate"),
+            SkillModel(user_id=u2.student_id, skill="Tailwind CSS", skill_level="Advanced"),
+            SkillModel(user_id=u3.student_id, skill="C++", skill_level="Advanced"),
+            SkillModel(user_id=u3.student_id, skill="ROS", skill_level="Advanced"),
+            SkillModel(user_id=u3.student_id, skill="SolidWorks", skill_level="Intermediate"),
+        ])
+        db.commit()
 
         # ---------------------------------------------------------------
         # Clubs  (details + settings JSON)

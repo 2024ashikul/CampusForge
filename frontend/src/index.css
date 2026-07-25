@@ -296,6 +296,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin-bottom: 1.25rem;
 }
 
+/* One-line filter rails stay compact on every directory page and scroll gracefully on small screens. */
+.filter-chip-row {
+  display: flex;
+  gap: .375rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: .125rem .125rem .4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.filter-chip-row > button { flex: 0 0 auto; white-space: nowrap; }
+
 .input-field {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
