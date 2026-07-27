@@ -35,6 +35,7 @@ import {
   type Skill,
   type SkillLevel
 } from '../services/api';
+import type { Socials } from '../interfaces/student.type';
 import { useAuth } from '../context/AuthContext';
 import { type TabOption, Tabs } from '../components/Tabs';
 import { PostCard } from '../components/Posts/PostCard';
@@ -67,6 +68,7 @@ export const UserProfileView: React.FC = () => {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('Intermediate');
   const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
+  const [socialsState, setSocialsState] = useState<Socials>({});
   const [isSaving, setIsSaving] = useState(false);
 
   const [isUploadingPic, setIsUploadingPic] = useState(false);
@@ -107,6 +109,7 @@ export const UserProfileView: React.FC = () => {
         setProfile(userData);
         setBioInput(userData.bio || '');
         setSkillsList(userData.skills || []);
+        setSocialsState(userData.socials || {});
 
         // Filter projects vs general posts
         const projList = userPosts.filter((p) => p.post_type === 'project');
@@ -149,11 +152,13 @@ export const UserProfileView: React.FC = () => {
     const updated = await updateUserApi(profile.student_id, {
       bio: bioInput,
       skills: skillsList,
+      socials: socialsState,
     });
     if (updated) {
       setProfile(updated);
       setBioInput(updated.bio || '');
       setSkillsList(updated.skills || []);
+      setSocialsState(updated.socials || {});
     }
     setIsSaving(false);
     setIsEditing(false);
@@ -308,6 +313,7 @@ export const UserProfileView: React.FC = () => {
                       onClick={() => {
                         setBioInput(profile.bio || '');
                         setSkillsList(profile.skills || []);
+                        setSocialsState(profile.socials || {});
                         setIsEditing(false);
                       }}
                       className="px-4 py-2 bg-footer border border-customBorder text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer hover:bg-primary"
@@ -328,6 +334,7 @@ export const UserProfileView: React.FC = () => {
                     onClick={() => {
                       setBioInput(profile.bio || '');
                       setSkillsList(profile.skills || []);
+                      setSocialsState(profile.socials || {});
                       setIsEditing(true);
                     }}
                     className="flex items-center gap-2 px-5 py-2 bg-footer border border-customBorder hover:border-accent/40 text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer shadow-sm hover:shadow-md"
@@ -353,13 +360,48 @@ export const UserProfileView: React.FC = () => {
                 <User className="w-4 h-4 text-accent" /> Student Overview
               </h3>
               {isEditing ? (
-                <textarea
-                  value={bioInput}
-                  onChange={(e) => setBioInput(e.target.value)}
-                  className="w-full bg-footer text-mainText border border-customBorder rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
-                  rows={4}
-                  placeholder="Write a short bio about yourself..."
-                />
+                <>
+                  <textarea
+                    value={bioInput}
+                    onChange={(e) => setBioInput(e.target.value)}
+                    className="w-full bg-footer text-mainText border border-customBorder rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
+                    rows={4}
+                    placeholder="Write a short bio about yourself..."
+                  />
+                  <div className="space-y-2 pt-2 border-t border-customBorder/50">
+                    <span className="text-[11px] font-bold text-subText uppercase">Social Links</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="url"
+                        placeholder="GitHub URL"
+                        value={socialsState.github || ''}
+                        onChange={(e) => setSocialsState({ ...socialsState, github: e.target.value })}
+                        className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                      <input
+                        type="url"
+                        placeholder="LinkedIn URL"
+                        value={socialsState.linkedin || ''}
+                        onChange={(e) => setSocialsState({ ...socialsState, linkedin: e.target.value })}
+                        className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Twitter URL"
+                        value={socialsState.twitter || ''}
+                        onChange={(e) => setSocialsState({ ...socialsState, twitter: e.target.value })}
+                        className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Website URL"
+                        value={socialsState.website || ''}
+                        onChange={(e) => setSocialsState({ ...socialsState, website: e.target.value })}
+                        className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-xs text-mainText/90 leading-relaxed">
                   {profile.bio || (
