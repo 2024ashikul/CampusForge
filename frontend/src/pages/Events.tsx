@@ -93,7 +93,7 @@ export default function EventsPage() {
             participationType: (be.settings?.participation_type as EventData['participationType']) || 'individual',
             entranceFee: be.settings?.entrance_fee || 'free',
             title: be.title,
-            shortDescription: be.short_description,
+            shortDescription: be.description,
             clubName: be.club_title || 'Campus Organization',
             tags: be.tags || ['Event'],
             date: dt.date,

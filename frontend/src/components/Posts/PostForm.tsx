@@ -1,8 +1,8 @@
-import React, { useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { Send, Plus, Trash2, X, Image, Video, Link as LinkIcon, UploadCloud, Loader2 } from 'lucide-react';
-import type { PostAttachment } from '../../interfaces/post.type';
+import type { PostAttachment, PostData, PostMedia, PostType } from '../../interfaces/post.type';
 import { useTheme } from '../../context/ThemeContext';
-import { createPostApi, uploadFileApi } from '../../services/api';
+import { createPostApi, updatePostApi, uploadFileApi, type BackendPost } from '../../services/api';
 
 const MDEditor = React.lazy(() => import('@uiw/react-md-editor'));
 
@@ -14,32 +14,30 @@ interface PostFormProps {
   isImageInput?: boolean;
   isVideoInput?: boolean;
   isTags?: boolean;
-  onPublish?: (
-    title: string,
-    markdown: string,
-    association: 'STUDENT' | 'CLUB',
-    attachments: Omit<PostAttachment, 'id' | 'postId'>[],
-    tags: string[]
-  ) => void;
+  postType?: PostType;
+  initialPost?: PostData;
+  onSaved?: (post: BackendPost) => void | Promise<void>;
 }
 
 export const PostForm: React.FC<PostFormProps> = ({
   eventId,
   clubName = 'Campus Community',
   onClose,
-  onPublish,
   isImageInput = true,
   isVideoInput = true,
   modalTitle,
-  isTags = true
+  isTags = true,
+  postType = 'post',
+  initialPost,
+  onSaved,
 }) => {
   const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState<string | undefined>("### Write your post content here...");
-  const [stagedAttachments, setStagedAttachments] = useState<Omit<PostAttachment, 'id' | 'postId'>[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [title, setTitle] = useState(initialPost?.title || '');
+  const [content, setContent] = useState<string | undefined>(initialPost?.markdownContent || '');
+  const [stagedAttachments, setStagedAttachments] = useState<Omit<PostAttachment, 'id' | 'postId'>[]>(initialPost?.attachments?.map(({ type, url, name }) => ({ type, url, name })) || []);
+  const [tags, setTags] = useState<string[]>(initialPost?.tags || []);
   const [tagInput, setTagInput] = useState('');
 
   const defaultPasteType = isImageInput ? 'PHOTO' : (isVideoInput ? 'VIDEO' : 'LINK');
@@ -48,9 +46,17 @@ export const PostForm: React.FC<PostFormProps> = ({
 
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<'published' | 'draft'>('published');
+  const [status, setStatus] = useState<'published' | 'draft'>(initialPost?.status === 'draft' ? 'draft' : 'published');
 
   const showAttachmentsSection = isImageInput || isVideoInput;
+
+  useEffect(() => {
+    setTitle(initialPost?.title || '');
+    setContent(initialPost?.markdownContent || '');
+    setStagedAttachments(initialPost?.attachments?.map(({ type, url, name }) => ({ type, url, name })) || []);
+    setTags(initialPost?.tags || []);
+    setStatus(initialPost?.status === 'draft' ? 'draft' : 'published');
+  }, [initialPost]);
 
   const detectAttachmentType = (fileName: string): 'PHOTO' | 'VIDEO' | 'FILE' => {
     const cleanName = fileName.trim().toLowerCase();
@@ -114,9 +120,9 @@ export const PostForm: React.FC<PostFormProps> = ({
     }
   };
 
-  // ----------------------------------------------------------------
-  // FIXED SUBMISSION HANDLER - MATCHES POSTCREATE PYDANTIC SCHEMA
-  // ----------------------------------------------------------------
+  
+  
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content?.trim() || isSubmitting) return;
@@ -127,37 +133,35 @@ export const PostForm: React.FC<PostFormProps> = ({
       const finalTags = isTags ? tags : [];
       const finalAttachments = showAttachmentsSection ? stagedAttachments : [];
 
-      // Form media list for PostMediaSchema
+      
       const formattedMedia = finalAttachments.map((att, idx) => ({
-        media_type: att.type.toLowerCase(), // 'photo' | 'video' | 'link'
+        media_type: att.type.toLowerCase() as PostMedia['media_type'],
         file_url: att.url,
         display_order: idx
       }));
 
-      // Convert eventId / clubId to integer or null
+      
       const parsedClubId = eventId && !isNaN(Number(eventId)) ? Number(eventId) : null;
 
-      // Send structure matching PostCreate Pydantic schema
+      
       const payload = {
         title: title.trim(),
         description: content.trim(),
-        post_type: "post",
+        post_type: initialPost?.postType || postType,
         status: status,
         club_id: parsedClubId,
         tags: finalTags,
         media: formattedMedia
       };
 
-      // Execute API Call
-      const createdPost = await createPostApi(payload);
+      const savedPost = initialPost
+        ? await updatePostApi(initialPost.rawId, payload)
+        : await createPostApi(payload);
 
-      if (onPublish) {
-        onPublish(title, content || '', 'STUDENT', stagedAttachments, finalTags);
-      }
-
-      // Reset Form
+      if (onSaved) await onSaved(savedPost);
+      
       setTitle('');
-      setContent('### Write your post content here...');
+      setContent('');
       setStagedAttachments([]);
       setTags([]);
 
@@ -192,7 +196,7 @@ export const PostForm: React.FC<PostFormProps> = ({
     <div className="bg-card border border-customBorder p-6 rounded-xl space-y-6 w-full transition-colors duration-200">
       <div className="flex justify-between items-center border-b border-customBorder pb-2">
         <h2 className="text-sm font-bold text-subText uppercase tracking-widest">
-          {modalTitle ? modalTitle : 'Submit the Form'}
+          {modalTitle ? modalTitle : initialPost ? 'Edit Post' : 'Create Post'}
         </h2>
         <button
           type="button"
@@ -364,8 +368,8 @@ export const PostForm: React.FC<PostFormProps> = ({
 
         <button
           onClick={handleSubmit}
-          disabled={isUploading || isSubmitting || !title.trim()}
-          className={`w-full text-primary py-3 rounded-lg font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-xs shadow-md ${isUploading || isSubmitting || !title.trim()
+          disabled={isUploading || isSubmitting || !title.trim() || !content?.trim()}
+          className={`w-full text-primary py-3 rounded-lg font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-xs shadow-md ${isUploading || isSubmitting || !title.trim() || !content?.trim()
               ? 'bg-accent/40 cursor-not-allowed opacity-75 text-primary/60'
               : 'bg-accent hover:bg-accentHover cursor-pointer active:scale-[0.99]'
             }`}
@@ -376,7 +380,7 @@ export const PostForm: React.FC<PostFormProps> = ({
             </>
           ) : (
             <>
-              <Send className="w-4 h-4" /> Finalize & Dispatch
+              <Send className="w-4 h-4" /> {initialPost ? 'Save Changes' : 'Finalize & Dispatch'}
             </>
           )}
         </button>

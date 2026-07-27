@@ -1,4 +1,4 @@
-# Code-quality tools (not required to run the API)
+
 black>=26.0.0
 ruff>=0.15.0
 pyright>=1.1.400

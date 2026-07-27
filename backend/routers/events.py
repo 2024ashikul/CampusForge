@@ -24,7 +24,7 @@ router = APIRouter(prefix="/events", tags=["Events"])
 def _parse(v, m):
     try:
         return m(**json.loads(v)) if v else m()
-    except TypeError, json.JSONDecodeError:
+    except (TypeError, json.JSONDecodeError):
         return m()
 
 
@@ -88,14 +88,13 @@ def format_event_response(e, current_user_student_id=None, db: Database | None =
     return {
         "id": e.id,
         "title": e.title,
-        "short_description": e.short_description,
+        "description": e.description,
         "event_type": e.event_type,
         "status": e.status,
         "start_time": e.start_time,
         "end_time": e.end_time,
         "club_id": e.club_id,
         "tags": _tags(e),
-        "results": e.results,
         "details": _details(e),
         "settings": _settings(e),
         "club_title": club.title if club else "Campus Organization",
@@ -138,17 +137,16 @@ def get_event_by_id(
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(event_in: EventCreate, db=Depends(get_db), current_user=Depends(get_current_user)):
     c = db.execute(
-        "INSERT INTO events (title,short_description,event_type,status,start_time,end_time,club_id,tags,results,details,settings) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO events (title,description,event_type,status,start_time,end_time,club_id,tags,details,settings) VALUES (?,?,?,?,?,?,?,?,?,?)",
         (
             event_in.title,
-            event_in.short_description,
+            event_in.description,
             event_in.event_type,
             event_in.status,
             event_in.start_time,
             event_in.end_time,
             event_in.club_id,
             json.dumps(event_in.tags) if event_in.tags is not None else None,
-            event_in.results,
             json.dumps((event_in.details or EventDetails()).model_dump()),
             json.dumps((event_in.settings or EventSettings()).model_dump()),
         ),
@@ -175,12 +173,11 @@ def update_event(
         k: getattr(updates, k)
         for k in [
             "title",
-            "short_description",
+            "description",
             "event_type",
             "status",
             "start_time",
             "end_time",
-            "results",
         ]
         if getattr(updates, k) is not None
     }
@@ -217,10 +214,9 @@ def publish_event_results(
         raise HTTPException(403, "Admin permissions required to publish event results")
     s = _settings(e).model_dump()
     s["is_results_public"] = True
-    db.execute(
-        "UPDATE events SET results=?,status='completed',settings=? WHERE id=?",
-        (req.results, json.dumps(s), event_id),
-    )
+    details = _details(e).model_dump()
+    details["results"] = req.results
+    db.execute("UPDATE events SET status='completed',details=?,settings=? WHERE id=?", (json.dumps(details), json.dumps(s), event_id))
     db.commit()
     return format_event_response(_event(db, event_id), current_user.student_id, db)
 
@@ -381,6 +377,17 @@ def update_event_registrant(
     )
     if not r:
         raise HTTPException(404, "Registrant record not found")
+    removing_admin_access = (
+        (updates.status is not None and updates.status != "approved")
+        or (updates.role is not None and updates.role.lower() != "admin")
+    )
+    if removing_admin_access and (r.role or "").lower() == "admin":
+        another_admin = db.one(
+            "SELECT 1 FROM event_registrants WHERE event_id=? AND id!=? AND status='approved' AND LOWER(role)='admin'",
+            (event_id, r.id),
+        )
+        if not another_admin and not event.club_id:
+            raise HTTPException(400, "Assign another event admin before removing the last admin")
     if (updates.role is not None or updates.team_name is not None) and (
         not check_is_main_event_admin(e, current_user.student_id, db)
     ):
@@ -466,3 +473,14 @@ def remove_event_team(
         raise HTTPException(404, "Team not found")
     db.commit()
     return {"detail": "Team removed from the event"}
+
+
+@router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_event(event_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    event = _event(db, event_id)
+    if not event:
+        raise HTTPException(404, "Event not found")
+    if not check_is_event_admin(event, current_user.student_id, db):
+        raise HTTPException(403, "Admin permissions required to delete an event")
+    db.execute("DELETE FROM events WHERE id=?", (event_id,))
+    db.commit()

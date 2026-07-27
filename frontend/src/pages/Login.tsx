@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 type Mode = 'login' | 'register';
 
-// ─── Shared Input Field ───────────────────────────────────────────────────────
+
 
 interface FieldProps {
   id: string;
@@ -48,7 +48,7 @@ const Field: React.FC<FieldProps> = ({
   </div>
 );
 
-// ─── Main Login Page ──────────────────────────────────────────────────────────
+
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -59,11 +59,11 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Shared
+  
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
 
-  // Register-only
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
@@ -124,13 +124,13 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary text-mainText flex">
 
-      {/* ── Left Panel: Branding ── */}
+      {}
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-card border-r border-customBorder p-12 relative overflow-hidden">
-        {/* Ambient blobs */}
+        {}
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-accent/8 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Logo */}
+        {}
         <div className="flex items-center gap-3 relative z-10">
           <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
             <Cpu className="w-5 h-5 text-accent" />
@@ -140,7 +140,7 @@ const Login: React.FC = () => {
           </span>
         </div>
 
-        {/* Hero */}
+        {}
         <div className="relative z-10 space-y-5">
           <div className="space-y-1">
             <p className="text-[11px] font-mono text-accent/70 uppercase tracking-widest">Engineering Campus Hub</p>
@@ -162,7 +162,7 @@ const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom stats */}
+        {}
         <div className="relative z-10 flex gap-8 border-t border-customBorder pt-6">
           {[['500+', 'Students'], ['40+', 'Active Clubs'], ['200+', 'Projects']].map(([num, label]) => (
             <div key={label}>
@@ -173,11 +173,11 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right Panel: Form ── */}
+      {}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-16">
         <div className="w-full max-w-sm space-y-7">
 
-          {/* Mobile logo */}
+          {}
           <div className="flex lg:hidden items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
               <Cpu className="w-4 h-4 text-accent" />
@@ -185,7 +185,7 @@ const Login: React.FC = () => {
             <span className="text-lg font-black">Campus<span className="text-accent">Forge</span></span>
           </div>
 
-          {/* Heading */}
+          {}
           <div>
             <h1 className="text-2xl font-black tracking-tight">
               {mode === 'login' ? 'Welcome back' : 'Join the hub'}
@@ -197,7 +197,7 @@ const Login: React.FC = () => {
             </p>
           </div>
 
-          {/* Mode Tabs */}
+          {}
           <div className="flex gap-1 bg-footer border border-customBorder rounded-xl p-1">
             {(['login', 'register'] as Mode[]).map((m) => (
               <button
@@ -215,7 +215,7 @@ const Login: React.FC = () => {
             ))}
           </div>
 
-          {/* Error Banner */}
+          {}
           {error && (
             <div className="flex items-start gap-2.5 px-3.5 py-3 bg-rose-900/15 border border-rose-500/30 rounded-xl text-xs">
               <AlertCircle size={13} className="text-rose-400 shrink-0 mt-0.5" />
@@ -223,10 +223,10 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
+          {}
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Register: Name first */}
+            {}
             {mode === 'register' && (
               <Field
                 id="name"
@@ -239,7 +239,7 @@ const Login: React.FC = () => {
               />
             )}
 
-            {/* Student ID — always shown */}
+            {}
             <Field
               id="studentId"
               label="Student ID"
@@ -255,7 +255,7 @@ const Login: React.FC = () => {
               required
             />
 
-            {/* Email — required for both login & register */}
+            {}
             <Field
               id="email"
               label="Email Address"
@@ -267,7 +267,7 @@ const Login: React.FC = () => {
               required
             />
 
-            {/* Password */}
+            {}
             <Field
               id="password"
               label="Password"
@@ -280,7 +280,7 @@ const Login: React.FC = () => {
               required
             />
 
-            {/* Register: Confirm password + bio */}
+            {}
             {mode === 'register' && (
               <>
                 <Field
@@ -315,7 +315,7 @@ const Login: React.FC = () => {
               </>
             )}
 
-            {/* Submit */}
+            {}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -335,7 +335,7 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Switch mode */}
+          {}
           <p className="text-center text-xs text-subText">
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button

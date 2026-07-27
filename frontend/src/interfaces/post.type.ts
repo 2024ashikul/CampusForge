@@ -1,9 +1,9 @@
-// ─── Post types ────────────────────────────────────────────────────────────────
+
 export type PostType = 'post' | 'project' | 'announcement' | 'announcement_event';
 export type PostStatus = 'draft' | 'published' | 'archived';
 export type ReactionType = 'heart' | 'like' | 'fire' | 'clap';
 
-// ─── Post Media ────────────────────────────────────────────────────────────────
+
 export interface PostMedia {
   id?: number;
   media_type: 'photo' | 'video' | 'link';
@@ -11,19 +11,19 @@ export interface PostMedia {
   display_order: number;
 }
 
-// ─── Comment (flat — frontend groups by parent_id) ────────────────────────────
+
 export interface BackendComment {
   id: number;
   post_id: number;
   user_id: string;
-  parent_id: number | null;    // null = root comment, number = reply to that comment id
+  parent_id: number | null;    
   content: string;
   created_at: string;
   author_name?: string;
   author_pic?: string | null;
 }
 
-// ─── Reaction counts map ───────────────────────────────────────────────────────
+
 export interface ReactionCounts {
   heart?: number;
   like?: number;
@@ -32,7 +32,7 @@ export interface ReactionCounts {
   [key: string]: number | undefined;
 }
 
-// ─── Post from API ─────────────────────────────────────────────────────────────
+
 export interface BackendPost {
   id: number;
   title: string;
@@ -55,7 +55,7 @@ export interface BackendPost {
   notification_recipient_count?: number;
 }
 
-// ─── Legacy PostData shape used by existing UI components ─────────────────────
+
 export type AuthorType = 'STUDENT' | 'CLUB';
 export type AttachmentType = 'PHOTO' | 'VIDEO' | 'FILE' | 'LINK';
 

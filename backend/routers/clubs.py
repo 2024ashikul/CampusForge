@@ -22,7 +22,7 @@ router = APIRouter(prefix="/clubs", tags=["Clubs"])
 def _parse(value, model):
     try:
         return model(**json.loads(value)) if value else model()
-    except TypeError, json.JSONDecodeError:
+    except (TypeError, json.JSONDecodeError):
         return model()
 
 
@@ -215,6 +215,17 @@ def update_club_member(
     member = db.one("SELECT * FROM club_members WHERE id=? AND club_id=?", (member_id, club_id))
     if not member:
         raise HTTPException(404, "Member record not found")
+    removing_admin_access = (
+        (updates.status is not None and updates.status != "approved")
+        or (updates.role is not None and updates.role.lower() not in {"admin", "lead", "leader", "president", "director"})
+    )
+    if removing_admin_access and check_is_club_admin(club, member.user_id, db):
+        other_admin = db.one(
+            "SELECT 1 FROM club_members WHERE club_id=? AND user_id!=? AND status='approved' AND LOWER(role) IN ('admin','lead','leader','president','director')",
+            (club_id, member.user_id),
+        )
+        if not other_admin:
+            raise HTTPException(400, "Assign another club admin before removing the last admin")
     fields = [
         (k, v) for k, v in [("role", updates.role), ("status", updates.status)] if v is not None
     ]
@@ -231,3 +242,14 @@ def update_club_member(
         "role": member.role,
         "status": member.status,
     }
+
+
+@router.delete("/{club_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_club(club_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    club = _club(db, club_id)
+    if not club:
+        raise HTTPException(404, "Club not found")
+    if not check_is_club_admin(club, current_user.student_id, db):
+        raise HTTPException(403, "Admin permissions required to delete a club")
+    db.execute("DELETE FROM club WHERE id=?", (club_id,))
+    db.commit()

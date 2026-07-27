@@ -15,7 +15,7 @@
 }
 
 :root {
-  /* Focused, HackerRank-inspired workspace palette */
+  
   --bg-primary: #16191d;
   --bg-secondary: #1d2126;
   --bg-card: #22272e;
@@ -42,7 +42,7 @@
 }
 
 [data-theme='light'] {
-  /* Modern Light Minimalist Palette */
+  
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
@@ -87,7 +87,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
 }
 
-/* ── Modern Minimalist Surface & Glass ── */
+
 .glass-panel {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -112,7 +112,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background-clip: text;
 }
 
-/* ── Minimalist Buttons ── */
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -180,7 +180,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: var(--brand-accent-soft);
 }
 
-/* ── Clean Badges ── */
+
 .role-badge {
   display: inline-flex;
   align-items: center;
@@ -217,7 +217,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--cyber-rose);
 }
 
-/* ── Category Badges ── */
+
 .category-badge {
   display: inline-flex;
   padding: 0.2rem 0.55rem;
@@ -233,7 +233,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .category-sports { background: rgba(16, 185, 129, 0.1); color: #34d399; }
 .category-business { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
 
-/* ── Skill Badges ── */
+
 .skill-badge {
   display: inline-flex;
   align-items: center;
@@ -263,7 +263,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: #fbbf24;
 }
 
-/* ── Scrollbar ── */
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb {
@@ -272,7 +272,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
 
-/* ── Shared application layout ── */
+
 .page-container {
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
@@ -296,7 +296,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin-bottom: 1.25rem;
 }
 
-/* One-line filter rails stay compact on every directory page and scroll gracefully on small screens. */
+
 .filter-chip-row {
   display: flex;
   gap: .375rem;

@@ -232,8 +232,7 @@ def update_post(
     p = _post(db, post_id)
     if not p:
         raise HTTPException(404, "Post not found")
-    if p.user_id and p.user_id != current_user.student_id:
-        raise HTTPException(403, "Cannot edit another user's post")
+    _require_post_manager(p, current_user.student_id, db, "edit")
     vals = {
         k: getattr(updates, k)
         for k in ["title", "description", "post_type", "status", "event_id"]
@@ -257,8 +256,7 @@ def publish_post(post_id: int, db=Depends(get_db), current_user=Depends(get_curr
     p = _post(db, post_id)
     if not p:
         raise HTTPException(404, "Post not found")
-    if p.user_id and p.user_id != current_user.student_id:
-        raise HTTPException(403, "Cannot publish another user's post")
+    _require_post_manager(p, current_user.student_id, db, "publish")
     db.execute("UPDATE posts SET status='published' WHERE id=?", (post_id,))
     db.commit()
     return format_post_response(_post(db, post_id), current_user.student_id, db)
@@ -269,7 +267,28 @@ def delete_post(post_id: int, db=Depends(get_db), current_user=Depends(get_curre
     p = _post(db, post_id)
     if not p:
         raise HTTPException(404, "Post not found")
-    if p.user_id and p.user_id != current_user.student_id:
-        raise HTTPException(403, "Cannot delete another user's post")
+    _require_post_manager(p, current_user.student_id, db, "delete")
     db.execute("DELETE FROM posts WHERE id=?", (post_id,))
     db.commit()
+
+
+def _require_post_manager(post, student_id, db, action: str) -> None:
+    if post.user_id:
+        if post.user_id != student_id:
+            raise HTTPException(403, f"Cannot {action} another user's post")
+        return
+    if post.club_id:
+        from routers.clubs import check_is_club_admin
+
+        club = db.one("SELECT * FROM club WHERE id=?", (post.club_id,))
+        if club and check_is_club_admin(club, student_id, db):
+            return
+        raise HTTPException(403, f"Club admin permissions required to {action} this post")
+    if post.event_id:
+        from routers.events import check_is_event_admin
+
+        event = db.one("SELECT * FROM events WHERE id=?", (post.event_id,))
+        if event and check_is_event_admin(event, student_id, db):
+            return
+        raise HTTPException(403, f"Event admin permissions required to {action} this post")
+    raise HTTPException(403, f"Cannot {action} this post")

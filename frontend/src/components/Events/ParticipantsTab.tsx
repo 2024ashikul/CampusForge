@@ -15,7 +15,7 @@ interface ParticipantsTabProps {
     setExpandedTeams: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }
 
-// Helper to get 2-letter initials (e.g. "Ashikul Islam" -> "AS")
+
 const getInitials = (name: string): string => {
     if (!name) return '??';
     const parts = name.trim().split(/\s+/);
@@ -29,11 +29,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     expandedTeams,
     setExpandedTeams
 }) => {
-    // 1. Separate Admins and Participants
+    
     const admins = (registrants || []).filter(r => r.role === 'admin');
     const participantList = (registrants || []).filter(r => r.role !== 'admin');
 
-    // 2. Group participants by Team Name (or ID for individual)
+    
     const groupedParticipants: Record<string, Registrant[]> = {};
     participantList.forEach((registrant) => {
         const key = eventType === 'individual' ? registrant.id : (registrant.teamName || 'Unassigned');
@@ -48,7 +48,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     return (
         <div className="space-y-6 text-mainText">
 
-            {/* HEADER */}
+            {}
             <div className="flex items-center justify-between border-b border-customBorder pb-3">
                 <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -61,7 +61,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </span>
             </div>
 
-            {/* --- SECTION 1: ADMINS --- */}
+            {}
             {admins.length > 0 && (
                 <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-subText">Admins</h4>
@@ -71,7 +71,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                                 key={admin.id}
                                 className="bg-card border border-customBorder rounded-xl p-4 flex items-center justify-between gap-4"
                             >
-                                {/* LEFT: NAME, ID, AND ROLE (e.g. Media Manager from teamName) */}
+                                {}
                                 <div className="space-y-0.5 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <h5 className="text-sm font-bold text-mainText truncate">{admin.name}</h5>
@@ -84,7 +84,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                                     </p>
                                 </div>
 
-                                {/* RIGHT: AVATAR WITH INITIALS */}
+                                {}
                                 <div className="w-8 h-8 rounded-full border border-customBorder bg-card/60 text-emerald-500 font-bold text-xs flex items-center justify-center shrink-0">
                                     {getInitials(admin.name)}
                                 </div>
@@ -94,7 +94,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
             )}
 
-            {/* --- SECTION 2: PARTICIPANTS --- */}
+            {}
             <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-subText">Participants</h4>
 
@@ -109,24 +109,24 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                                 key={teamName}
                                 className="bg-card border border-customBorder rounded-xl overflow-hidden"
                             >
-                                {/* TEAM TITLE BAR */}
+                                {}
                                 <div className="bg-card/80 px-4 py-3 border-b border-customBorder/60">
                                     <h5 className="text-sm font-bold text-mainText">{teamName}</h5>
                                 </div>
 
-                                {/* PARTICIPANT CELLS GRID (MATCHES YOUR IMAGE GRID) */}
+                                {}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-customBorder/40">
                                     {members.map((member) => (
                                         <div
                                             key={member.id}
                                             className="p-4 flex items-center justify-center gap-2.5"
                                         >
-                                            {/* CIRCULAR AVATAR INITIALS */}
+                                            {}
                                             <div className="w-9 h-9 rounded-full border border-customBorder bg-card/60 text-emerald-500 font-bold text-xs flex items-center justify-center shrink-0">
                                                 {getInitials(member.name)}
                                             </div>
 
-                                            {/* ID DISPLAYED DIRECTLY BESIDE THE ICON */}
+                                            {}
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-xs font-bold text-mainText truncate">{member.name}</span>
                                                 <code className="text-[10px] font-mono text-accent font-bold">

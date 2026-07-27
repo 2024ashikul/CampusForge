@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useRef, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Users,
   Trophy,
@@ -17,7 +17,8 @@ import {
   MapPin,
   Tag,
   Ticket,
-  Upload
+  Upload,
+  Trash2
 } from 'lucide-react';
 import Tabs, { type TabOption } from '../components/Tabs';
 import TopPortion from '../components/TopPortion';
@@ -29,6 +30,7 @@ import {
   addTeamMembersApi,
   updateEventApi,
   publishEventResultsApi,
+  deleteEventApi,
   getEventRegistrantsApi,
   updateEventRegistrantApi,
   addEventAdminApi,
@@ -85,6 +87,7 @@ interface EventRegistrant {
 
 export const Event: React.FC = () => {
   const { eventid } = useParams<{ eventid: string }>();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const numericId = eventid ? parseInt(eventid, 10) : 1;
   const { theme } = useTheme();
@@ -97,18 +100,18 @@ export const Event: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('details');
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Modal States
+  
   const [isPublishResultsOpen, setIsPublishResultsOpen] = useState(false);
   const [isPostAnnounceOpen, setIsPostAnnounceOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [teamRegistrationMode, setTeamRegistrationMode] = useState<'create' | 'extend'>('create');
 
-  // Publish Results State
+  
   const [resultsInput, setResultsInput] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const resultsFileRef = useRef<HTMLInputElement>(null);
 
-  // Announcement State
+  
   const [announceTitle, setAnnounceTitle] = useState('');
   const [announceContent, setAnnounceContent] = useState('');
   const [isPostingAnnounce, setIsPostingAnnounce] = useState(false);
@@ -120,7 +123,7 @@ export const Event: React.FC = () => {
   const [adminSearch, setAdminSearch] = useState('');
   const [adminRole, setAdminRole] = useState('Admin');
 
-  // Settings State
+  
   const [editTitle, setEditTitle] = useState('');
   const [editMarkdown, setEditMarkdown] = useState('');
   const [editType, setEditType] = useState('workshop');
@@ -178,15 +181,15 @@ export const Event: React.FC = () => {
     try {
       const backendEv = await getEventByIdApi(numericId);
       setEventData(backendEv);
-      setResultsInput(backendEv.results || '');
+      setResultsInput(backendEv.details?.results || '');
 
       setEditTitle(backendEv.title);
-      setEditMarkdown(backendEv.details?.description_markdown || backendEv.short_description);
+      setEditMarkdown(backendEv.details?.description_markdown || backendEv.description);
       setEditType(backendEv.event_type || 'workshop');
       setEditStatus(backendEv.status || 'upcoming');
       setEditParticipation(backendEv.settings?.participation_type || 'individual');
       setEditFee(backendEv.settings?.entrance_fee || 'free');
-      // Parse start_time into datetime-local format
+      
       setEditStartTime(backendEv.start_time ? backendEv.start_time.slice(0, 16) : '');
       setEditEndTime(backendEv.end_time ? backendEv.end_time.slice(0, 16) : '');
       setEditLocation(backendEv.details?.location || '');
@@ -235,7 +238,7 @@ export const Event: React.FC = () => {
     tabOptions.push({ key: 'settings', label: '⚙️ Settings & Banner' });
   }
 
-  // Handlers
+  
   const handleRegister = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const isTeamEvent = eventData?.settings?.participation_type === 'team';
@@ -307,7 +310,7 @@ export const Event: React.FC = () => {
     try {
       const updated = await updateEventApi(numericId, {
         title: editTitle,
-        short_description: editMarkdown.replace(/[#*_`>\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 240) || editTitle,
+        description: editMarkdown.replace(/[#*_`>\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 240) || editTitle,
         event_type: editType,
         status: editStatus,
         start_time: editStartTime,
@@ -349,6 +352,14 @@ export const Event: React.FC = () => {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!window.confirm(`Delete “${eventData?.title || 'this event'}”? This cannot be undone.`)) return;
+    try {
+      await deleteEventApi(numericId);
+      navigate('/events');
+    } catch (err: any) { showNotification(err.message || 'Failed to delete event'); }
   };
 
   const handleApproveRegistrant = async (registrantId: number) => {
@@ -404,14 +415,14 @@ export const Event: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary text-mainText font-sans pb-16">
       
-      {/* Toast */}
+      
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-accent text-white px-5 py-3 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2">
           <Sparkles className="w-4 h-4" /> {notification}
         </div>
       )}
 
-      {/* Facebook Event Cover & Header */}
+      
       <TopPortion
         bannerUrl={eventData?.details?.banner_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"}
         logoUrl={eventData?.details?.profile_picture_url || "🗓️"}
@@ -428,7 +439,7 @@ export const Event: React.FC = () => {
 
       <div className="max-w-[1180px] mx-auto px-4 sm:px-5">
 
-        {/* Horizontal Navigation Tabs */}
+        
         <div className="glass-panel mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3">
           <Tabs options={tabOptions} activeTab={activeTab} onChange={(k) => setActiveTab(k)} />
           {isAdmin && (
@@ -439,31 +450,34 @@ export const Event: React.FC = () => {
               >
                 <Megaphone className="w-3.5 h-3.5" /> + Announcement
               </button>
+              <button onClick={handleDeleteEvent} className="px-3.5 py-2 border border-rose-500/40 text-rose-400 font-bold rounded-xl text-xs hover:bg-rose-500/10 transition-all cursor-pointer flex items-center gap-1.5">
+                <Trash2 className="w-3.5 h-3.5" /> Delete event
+              </button>
             </div>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-          {/* Left Column: Event Overview & Content (8 cols) */}
+          
           <div className="lg:col-span-8 space-y-6">
 
-            {/* DETAILS TAB */}
+            
             {activeTab === 'details' && (
               <div className="space-y-5">
-                {/* Event Description Card */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-3">
                   <h3 className="text-sm font-bold text-mainText border-b border-customBorder pb-2">
                     Event Overview
                   </h3>
                   <div data-color-mode={theme} className="text-sm">
                     <Suspense fallback={<p className="text-xs text-subText animate-pulse">Loading overview...</p>}>
-                      <MarkdownPreview source={eventData?.details?.description_markdown || eventData?.short_description || ''} className="!bg-transparent !text-mainText text-sm leading-relaxed" />
+                      <MarkdownPreview source={eventData?.details?.description_markdown || eventData?.description || ''} className="!bg-transparent !text-mainText text-sm leading-relaxed" />
                     </Suspense>
                   </div>
                 </div>
 
-                {/* Virtual Link Section */}
+                
                 {eventData?.details?.virtual_link && (
                   <div className="rounded-2xl border border-customBorder bg-card p-5 space-y-2">
                     <div className="flex items-center justify-between">
@@ -497,7 +511,7 @@ export const Event: React.FC = () => {
               </div>
             )}
 
-            {/* RESULTS TAB */}
+            
             {activeTab === 'results' && (
               <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-customBorder pb-3">
@@ -506,13 +520,13 @@ export const Event: React.FC = () => {
                   </h3>
                 </div>
 
-                {eventData?.results ? (
+                {eventData?.details?.results ? (
                   <div data-color-mode={theme} className="bg-primary/50 p-5 rounded-2xl border border-customBorder overflow-x-auto">
-                    {/^https?:\/\//.test(eventData.results) ? (
-                      <a href={eventData.results} target="_blank" rel="noreferrer" className="btn-secondary w-fit"><ExternalLink className="h-4 w-4" /> Open results file</a>
+                    {/^https?:\/\//.test(eventData.details.results) ? (
+                      <a href={eventData.details.results} target="_blank" rel="noreferrer" className="btn-secondary w-fit"><ExternalLink className="h-4 w-4" /> Open results file</a>
                     ) : (
                       <Suspense fallback={<p className="text-xs text-subText font-mono animate-pulse">Loading standings...</p>}>
-                        <MarkdownPreview source={eventData.results} className="!bg-transparent !text-mainText text-sm leading-relaxed" />
+                        <MarkdownPreview source={eventData.details.results} className="!bg-transparent !text-mainText text-sm leading-relaxed" />
                       </Suspense>
                     )}
                   </div>
@@ -525,7 +539,7 @@ export const Event: React.FC = () => {
               </div>
             )}
 
-            {/* ATTENDEES TAB */}
+            
             {activeTab === 'registrants' && (
               <div className="rounded-2xl border border-customBorder bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-customBorder pb-3">
@@ -601,10 +615,10 @@ export const Event: React.FC = () => {
               </div>
             )}
 
-            {/* SETTINGS TAB — Extensive 3-section panel */}
+            
             {activeTab === 'settings' && isAdmin && (
               <form onSubmit={handleUpdateSettings} className="space-y-5">
-                {/* Section 1: Identity */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <Settings className="w-3.5 h-3.5" /> Identity & Content
@@ -674,7 +688,7 @@ export const Event: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Section 2: Logistics */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5" /> Logistics & Location
@@ -713,10 +727,10 @@ export const Event: React.FC = () => {
                       <FileSpreadsheet className="h-4 w-4" /> Manage standings
                     </button>
                   </div>
-                  <p className="text-xs text-subText">{eventData?.results ? 'Standings are ready to publish or update.' : 'No standings have been added yet.'}</p>
+                  <p className="text-xs text-subText">{eventData?.details?.results ? 'Standings are ready to publish or update.' : 'No standings have been added yet.'}</p>
                 </div>
 
-                {/* Section 3: Privacy & Access */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <Tag className="w-3.5 h-3.5" /> Privacy & Access
@@ -736,7 +750,7 @@ export const Event: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                  {/* Toggle row */}
+                  
                   <div className="space-y-2 pt-1">
                     {([
                       { label: 'Attendees List Visible to Public', key: 'attendees', value: editIsAttendeesPublic, set: setEditIsAttendeesPublic,
@@ -905,7 +919,7 @@ export const Event: React.FC = () => {
         </div>
       )}
 
-      {/* STANDINGS MODAL */}
+      
       {isPublishResultsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsPublishResultsOpen(false)} />
@@ -964,7 +978,7 @@ export const Event: React.FC = () => {
         </div>
       )}
 
-      {/* ANNOUNCEMENT MODAL */}
+      
       {isPostAnnounceOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsPostAnnounceOpen(false)} />

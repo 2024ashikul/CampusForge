@@ -45,7 +45,7 @@ def init_db():
         );
     """)
 
-    # Seed data if empty
+    
     cursor.execute("SELECT COUNT(*) FROM user")
     if cursor.fetchone()[0] == 0:
         cursor.execute(

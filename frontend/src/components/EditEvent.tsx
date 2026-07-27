@@ -6,10 +6,10 @@ import {
 } from 'lucide-react';
 import { PostForm } from './Posts/PostForm';
 
-// Lazy loading the Markdown Editor for optimize mounting execution speeds
+
 const MDEditor = React.lazy(() => import('@uiw/react-md-editor'));
 
-// --- STRICT DATA TYPE SCHEMAS ---
+
 export interface Announcement {
     id: string;
     date: string;
@@ -69,7 +69,7 @@ interface EditEventProps {
     eventData: EventData;
     onUpdateEvent: (updatedData: EventData) => void;
     onRemoveRegistrant: (registrantId: string) => void;
-    // We pass theme context variable directly to sync markdown editor view colors natively
+    
     themeMode?: 'dark' | 'light'; 
 }
 
@@ -79,17 +79,17 @@ export const EditEvent: React.FC<EditEventProps> = ({
     onRemoveRegistrant,
     themeMode = 'dark'
 }) => {
-    // Modal Stage Toggle Configurations Engine
+    
     const [activeModal, setActiveModal] = useState<'announcement' | 'participants' | 'edit-description' | null>(null);
 
-    // Collapsible Layout Trackers
+    
 
 
-    // Local state tracking mirrors targeting central document updates
+    
     const [settings, setSettings] = useState<EventData>({ ...eventData });
     const [temporaryMarkdown, setTemporaryMarkdown] = useState(settings.descriptionMarkdown);
 
-    // Controlled inputs mutation handlers
+    
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setSettings(prev => ({ ...prev, [name]: value }));
@@ -101,7 +101,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
         setSettings(prev => ({ ...prev, [name]: numValue }));
     };
 
-    // Toggle specific attributes inside nested settings object matrix
+    
     const toggleSettingFlag = (flagName: keyof EventData['settings']) => {
         setSettings(prev => ({
             ...prev,
@@ -112,14 +112,14 @@ export const EditEvent: React.FC<EditEventProps> = ({
         }));
     };
 
-    // Core Submit updates dispatch pipeline method
+    
     const saveAllConfigurations = (e: React.FormEvent) => {
         e.preventDefault();
         onUpdateEvent(settings);
         alert('All master structural profile configurations updated securely!');
     };
 
-    // Temporary layout description modification handler
+    
     const saveDescriptionMarkdownModal = () => {
         setSettings(prev => ({ ...prev, descriptionMarkdown: temporaryMarkdown }));
         setActiveModal(null);
@@ -129,10 +129,10 @@ export const EditEvent: React.FC<EditEventProps> = ({
     return (
         <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto p-1 text-mainText">
 
-            {/* 1. MANAGEMENT CONSOLE TOOLBAR */}
+            {}
             <div className="grid grid-cols-1 gap-2">
 
-                {/* ACTION BUTTON A: ANNOUNCEMENTS TIMELINE PIPELINE */}
+                {}
                 <button
                     onClick={() => setActiveModal('announcement')}
                     className="flex items-center justify-between py-3 px-5 bg-card border border-customBorder hover:border-accent/40 rounded-xl transition-all group text-left cursor-pointer"
@@ -149,7 +149,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                     <Plus className="w-5 h-5 text-subText group-hover:text-accent transition-colors" />
                 </button>
 
-                {/* ACTION BUTTON B: DYNAMIC EXTRACTED EDIT DESCRIPTION PANEL MIGRATION */}
+                {}
                 <button
                     onClick={() => {
                         setTemporaryMarkdown(settings.descriptionMarkdown);
@@ -169,7 +169,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                     <Plus className="w-5 h-5 text-subText group-hover:text-accent transition-colors" />
                 </button>
 
-                {/* ACTION BUTTON C: PARTICIPANTS INBOUND ACCESS ROSTER */}
+                {}
                 <button
                     onClick={() => setActiveModal('participants')}
                     className="flex items-center justify-between  py-3 px-5 bg-card border border-customBorder hover:border-accent/40 rounded-xl transition-all group text-left cursor-pointer"
@@ -188,7 +188,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
 
             </div>
 
-            {/* 2. DYNAMIC CRITICAL FEATURE METRIC SWITCH MATRIX PANEL */}
+            {}
             <div className="bg-card border border-customBorder rounded-xl p-6 space-y-2">
                 <div className="flex items-center space-x-2 pb-3 border-b border-customBorder">
                     <ShieldAlert className="w-4 h-4 text-accent" />
@@ -197,7 +197,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 pt-2">
                     
-                    {/* TOGGLE 1: IS DRAFT MODE */}
+                    {}
                     <div className="bg-primary/40 py-2 px-4 border border-customBorder rounded-xl flex items-center justify-between gap-3">
                         <div className="min-w-0">
                             <div className="text-xs font-bold truncate">Draft Schema State</div>
@@ -212,7 +212,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                         </button>
                     </div>
 
-                    {/* TOGGLE 2: RESULTS VISIBILITY */}
+                    {}
                     <div className="bg-primary/40 py-2 px-4 border border-customBorder rounded-xl flex items-center justify-between gap-3">
                         <div className="min-w-0">
                             <div className="text-xs font-bold truncate">Publish Results</div>
@@ -227,7 +227,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                         </button>
                     </div>
 
-                    {/* TOGGLE 3: PUBLIC ROSTER TRACKING */}
+                    {}
                     <div className="bg-primary/40 py-2 px-4 border border-customBorder rounded-xl flex items-center justify-between gap-3">
                         <div className="min-w-0">
                             <div className="text-xs font-bold truncate">Public Attendance</div>
@@ -242,7 +242,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                         </button>
                     </div>
 
-                    {/* TOGGLE 4: DISCUSSIONS CHANNEL LOCK */}
+                    {}
                     <div className="bg-primary/40 py-2 px-4 border border-customBorder rounded-xl flex items-center justify-between gap-3">
                         <div className="min-w-0">
                             <div className="text-xs font-bold truncate">Discussion Stream</div>
@@ -260,7 +260,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                 </div>
             </div>
 
-            {/* 3. MAIN ATTRIBUTES REGISTRY BLOCK CONFIGURATIONS */}
+            {}
             <div className="bg-card border border-customBorder rounded-xl p-6">
                 <div className="flex items-center space-x-2 pb-4 mb-6 border-b border-customBorder">
                     <Settings className="w-4 h-4 text-accent" />
@@ -270,7 +270,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                 <form onSubmit={saveAllConfigurations} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                        {/* Title */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><FileEdit className="w-3 h-3" /> Event Master Title</label>
                             <input
@@ -279,7 +279,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Tagline */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><HelpCircle className="w-3 h-3" /> Event Tagline</label>
                             <input
@@ -289,7 +289,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Calendar Date String */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Target Date Sequence</label>
                             <input
@@ -298,7 +298,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Run Clock */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><Clock className="w-3 h-3" /> Runtime Execution Window</label>
                             <input
@@ -307,7 +307,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Location Target Venue */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Physical Base Venue</label>
                             <input
@@ -316,7 +316,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Streaming Endpoint URL */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText flex items-center gap-1.5"><Link2 className="w-3 h-3" /> Virtual Portal / Mirror Node Link</label>
                             <input
@@ -326,7 +326,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             />
                         </div>
 
-                        {/* Allocation Limits */}
+                        {}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-subText">Total Allocation Seats</label>
@@ -344,7 +344,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             </div>
                         </div>
 
-                        {/* Dropdown Type Lifecycle Categorization Selector */}
+                        {}
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-subText">Operational Context Flag Classification</label>
                             <select
@@ -364,7 +364,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
 
                     </div>
 
-                    {/* Master Action Trigger execution layout bar */}
+                    {}
                     <div className="flex justify-end pt-4 border-t border-customBorder">
                         <button
                             type="submit"
@@ -376,9 +376,9 @@ export const EditEvent: React.FC<EditEventProps> = ({
                 </form>
             </div>
 
-            {/* ================= MODAL MASTER CONSOLE CONTAINER SHIELD LAYER ================= */}
+            {}
 
-            {/* MODAL 1: INTEGRATED POSTFORM BROADCASTER INTERACTION LAYER */}
+            {}
             {activeModal === 'announcement' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
                     <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl">
@@ -394,12 +394,12 @@ export const EditEvent: React.FC<EditEventProps> = ({
                 </div>
             )}
 
-            {/* MODAL 2: INTERACTIVE INDEPENDENT FULL SCREEN MARKDOWN EDITOR MODAL PANEL */}
+            {}
             {activeModal === 'edit-description' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
                     <div className="bg-card border border-customBorder w-full max-w-4xl h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden">
                         
-                        {/* Modal Header */}
+                        {}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-customBorder bg-primary/40">
                             <div>
                                 <h3 className="font-bold text-mainText flex items-center gap-2 text-sm uppercase tracking-wider">
@@ -410,7 +410,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             <button onClick={() => setActiveModal(null)} className="text-subText hover:text-mainText cursor-pointer"><X className="w-5 h-5" /></button>
                         </div>
 
-                        {/* Interactive Dynamic Editor Stage Component wrapper container */}
+                        {}
                         <div className="flex-1 p-6 overflow-y-auto bg-primary/20" data-color-mode={themeMode}>
                             <Suspense fallback={<div className="w-full h-full flex items-center justify-center font-mono text-xs text-subText animate-pulse">Mounting Rich Markdown Editor Elements Node...</div>}>
                                 <MDEditor
@@ -423,7 +423,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                             </Suspense>
                         </div>
 
-                        {/* Actions Control Toolbar Footer */}
+                        {}
                         <div className="p-4 bg-primary/40 border-t border-customBorder flex justify-end gap-3">
                             <button 
                                 type="button"
@@ -444,7 +444,7 @@ export const EditEvent: React.FC<EditEventProps> = ({
                 </div>
             )}
 
-            {/* MODAL 3: INBOUND ROSTER REGISTRATION REMOVAL PARSER */}
+            {}
             {activeModal === 'participants' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
                     <div className="bg-card border border-customBorder w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">

@@ -5,7 +5,7 @@ import {
   Clock, Info, Image, Type, Users2 
 } from 'lucide-react';
 
-// --- EXPANDED INTERFACES FROM YOUR CONFIGURATION ---
+
 interface Club {
   name: string;
   tagline: string;
@@ -27,7 +27,7 @@ interface ClubEvent {
   type: 'In-person' | 'Virtual';
   location: string;
   spotsLeft: number;
-  availability: string; // Added custom field requirement
+  availability: string; 
 }
 
 interface Post {
@@ -66,13 +66,13 @@ export const EditClub: React.FC<EditClubProps> = ({
   onKickMember,
   onToggleRole
 }) => {
-  // Modal toggles
+  
   const [activeModal, setActiveModal] = useState<'event' | 'post' | 'members' | null>(null);
 
-  // Settings Forms State
+  
   const [settings, setSettings] = useState<Club>({ ...clubData });
 
-  // Form State: Event Modal
+  
   const [eventForm, setEventForm] = useState<Omit<ClubEvent, 'id'>>({
     title: '',
     date: '',
@@ -83,7 +83,7 @@ export const EditClub: React.FC<EditClubProps> = ({
     availability: 'Open to All'
   });
 
-  // Form State: Post/Announcement Modal
+  
   const [postForm, setPostForm] = useState({
     title: '',
     excerpt: '',
@@ -105,7 +105,7 @@ export const EditClub: React.FC<EditClubProps> = ({
     e.preventDefault();
     onAddEvent(eventForm);
     setActiveModal(null);
-    // Reset form
+    
     setEventForm({ title: '', date: '', time: '', type: 'In-person', location: '', spotsLeft: 30, availability: 'Open to All' });
   };
 
@@ -119,7 +119,7 @@ export const EditClub: React.FC<EditClubProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       
-      {/* QUICK ACTIONS TOOLBAR GRID */}
+      {}
       <div className="grid grid-cols-1  gap-4">
         
         <button 
@@ -172,7 +172,7 @@ export const EditClub: React.FC<EditClubProps> = ({
 
       </div>
 
-      {/* DETAILED GENERAL SETTINGS CARD */}
+      {}
       <div className="bg-card border border-customBorder rounded-xl p-6">
         <div className="flex items-center space-x-2 pb-4 mb-6 border-b border-customBorder">
           <Settings className="w-4 h-4 text-accent" />
@@ -244,9 +244,9 @@ export const EditClub: React.FC<EditClubProps> = ({
       </div>
 
 
-      {/* ================= MODAL WINDOWS SYSTEM ================= */}
+      {}
 
-      {/* MODAL 1: CREATE EVENT */}
+      {}
       {activeModal === 'event' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
           <div className="bg-card border border-customBorder w-full max-w-lg rounded-xl shadow-2xl overflow-hidden scale-up">
@@ -305,7 +305,7 @@ export const EditClub: React.FC<EditClubProps> = ({
         </div>
       )}
 
-      {/* MODAL 2: POST ANNOUNCEMENT */}
+      {}
       {activeModal === 'post' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
           <div className="bg-card border border-customBorder w-full max-w-lg rounded-xl shadow-2xl overflow-hidden scale-up">
@@ -345,7 +345,7 @@ export const EditClub: React.FC<EditClubProps> = ({
         </div>
       )}
 
-      {/* MODAL 3: MANAGE MEMBERS ROSTER */}
+      {}
       {activeModal === 'members' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
           <div className="bg-card border border-customBorder w-full max-w-xl rounded-xl shadow-2xl overflow-hidden scale-up flex flex-col max-h-[85vh]">
@@ -376,7 +376,7 @@ export const EditClub: React.FC<EditClubProps> = ({
                     </div>
                   </div>
 
-                  {/* Operational Security Options based on Rank Permissions */}
+                  {}
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => onToggleRole(member.id)}

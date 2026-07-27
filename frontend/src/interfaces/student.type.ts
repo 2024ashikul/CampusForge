@@ -1,4 +1,4 @@
-// ─── Skill ────────────────────────────────────────────────────────────────────
+
 export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
 export interface Skill {
@@ -6,7 +6,7 @@ export interface Skill {
   level: SkillLevel;
 }
 
-// ─── User / Student ───────────────────────────────────────────────────────────
+
 export interface Socials {
   github?: string;
   linkedin?: string;
@@ -15,7 +15,7 @@ export interface Socials {
   [key: string]: string | undefined;
 }
 
-// Department codes mapping (derived from student_id YYPPNNN)
+
 export const DEPARTMENT_CODES: Record<string, string> = {
   "01": "Civil Engineering",
   "02": "Mechanical Engineering",
@@ -38,10 +38,10 @@ export function deriveDepartment(studentId: string): string {
 }
 
 export interface BackendUser {
-  student_id: string;          // YYPPNNN e.g. "2604001" — also the primary key
+  student_id: string;          
   name: string;
   email: string;
-  department: string;          // derived from student_id by backend
+  department: string;          
   profile_pic?: string | null;
   bio?: string | null;
   skills?: Skill[];

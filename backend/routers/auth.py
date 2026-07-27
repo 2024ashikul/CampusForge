@@ -23,7 +23,7 @@ def format_user_dict(user, db):
     )
     try:
         socials = json.loads(user.socials) if user.socials else None
-    except TypeError, json.JSONDecodeError:
+    except (TypeError, json.JSONDecodeError):
         socials = None
     return {
         "student_id": user.student_id,

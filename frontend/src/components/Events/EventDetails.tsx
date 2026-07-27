@@ -8,7 +8,7 @@ interface EventDetailsTabProps {
 export const EventDetailsTab: React.FC<EventDetailsTabProps> = ({
     descriptionMarkdown = ''
 }) => {
-    // Dynamically look up the current active theme right during runtime execution
+    
     const currentTheme = typeof window !== 'undefined' 
         ? (window.document.documentElement.getAttribute('data-color-mode') === 'light' ? 'light' : 'dark')
         : 'dark';
@@ -17,12 +17,12 @@ export const EventDetailsTab: React.FC<EventDetailsTabProps> = ({
         <div className="bg-card border border-customBorder rounded-xl space-y-4 animate-fade-in transition-colors duration-200">
 
 
-            {/* CORE RENDERING LOGIC STRATEGY */}
+            {}
             <div className="wmde-markdown-var-override">
                  
                     
                     <div className="space-y-2">
-                        {/* FIXED: Replaced static wrapper attributes with custom color rules */}
+                        {}
                         <div className="bg-primary/60 border border-customBorder rounded-xl p-6 min-h-[350px] shadow-sm transition-colors">
 
                             {!descriptionMarkdown.trim() ? (
@@ -31,7 +31,7 @@ export const EventDetailsTab: React.FC<EventDetailsTabProps> = ({
                                     <p className="text-[11px] mt-1">Check back later for structural announcement descriptions.</p>
                                 </div>
                             ) : (
-                                /* FIXED: Passed inherit and text-mainText classes so typography colors sync natively */
+                                
                                 <MDEditor.Markdown
                                     source={descriptionMarkdown}
                                     style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: '14px' }}

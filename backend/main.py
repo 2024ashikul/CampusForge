@@ -13,7 +13,7 @@ app = FastAPI(
     version="3.0.0",
 )
 
-# Enable CORS for frontend integration
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,12 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve uploaded files as static
+
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
-# Register API Routers
+
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(skills.router, prefix="/api")

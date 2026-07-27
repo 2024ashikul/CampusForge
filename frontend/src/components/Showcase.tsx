@@ -64,17 +64,17 @@ export const PostShowcaseDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary text-mainText p-4 sm:p-8 font-sans">
       
-      {/* HEADER CONTROLS */}
+      {}
       <div className="max-w-5xl mx-auto mb-6 border-b border-customBorder pb-5">
         <span className="text-[10px] font-bold text-accent bg-accent/10 border border-accent/20 px-2 py-1 rounded uppercase tracking-wider">Component preview</span>
         <h1 className="text-2xl font-bold mt-3">Post card showcase</h1>
         <p className="text-sm text-subText mt-1">A clean reading surface for updates, project notes, and shared links.</p>
       </div>
 
-      {/* DASHBOARD WORKSPACE */}
+      {}
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* LEFT MENU PANEL */}
+        {}
         <div className="lg:col-span-4 bg-card border border-customBorder rounded-lg p-3 space-y-1.5">
           <p className="text-[10px] font-bold text-subText uppercase tracking-wider px-2 mb-2 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-accent" /> Choose a sample</p>
           {triggers.map(t => {
@@ -98,7 +98,7 @@ export const PostShowcaseDashboard: React.FC = () => {
           })}
         </div>
 
-        {/* RIGHT PREVIEW SCREEN */}
+        {}
         <div className="lg:col-span-8">
           <PostCard postData={dummyScenarios[activeScenario]} />
         </div>

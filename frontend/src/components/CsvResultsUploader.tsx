@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, RefreshCw, Table as TableIcon } from 'lucide-react';
-// @ts-ignore
+
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
@@ -25,7 +25,7 @@ export const CsvResultsUploader: React.FC<CsvResultsUploaderProps> = ({
     const headerRow = `| ${parsedHeaders.join(' | ')} |`;
     const separatorRow = `| ${parsedHeaders.map(() => '---').join(' | ')} |`;
     const dataRows = parsedRows.map(row => {
-      // Ensure row length matches headers
+      
       const filledRow = parsedHeaders.map((_, i) => (row[i] !== undefined && row[i] !== null ? String(row[i]).trim() : ''));
       return `| ${filledRow.join(' | ')} |`;
     });
@@ -39,7 +39,7 @@ export const CsvResultsUploader: React.FC<CsvResultsUploaderProps> = ({
       return;
     }
 
-    // Filter out empty rows
+    
     const nonNullRows = matrix.filter(r => Array.isArray(r) && r.some(cell => cell !== null && cell !== '' && cell !== undefined));
     if (nonNullRows.length === 0) {
       setError('No valid data rows found in the file.');
@@ -110,7 +110,7 @@ export const CsvResultsUploader: React.FC<CsvResultsUploaderProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Upload Dropzone / Button */}
+      {}
       <div className="border-2 border-dashed border-customBorder hover:border-accent/50 transition-colors rounded-2xl p-6 text-center bg-card/40 backdrop-blur-sm relative group">
         <input
           type="file"
@@ -142,7 +142,7 @@ export const CsvResultsUploader: React.FC<CsvResultsUploaderProps> = ({
         </div>
       </div>
 
-      {/* Error display */}
+      {}
       {error && (
         <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -150,7 +150,7 @@ export const CsvResultsUploader: React.FC<CsvResultsUploaderProps> = ({
         </div>
       )}
 
-      {/* Live Extracted Table Preview */}
+      {}
       {headers.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">

@@ -1,22 +1,23 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import {
   MessageSquare, FileText, ExternalLink,
-  ThumbsUp, Send, Bookmark, MoreHorizontal, Globe, Flame, Heart, Sparkles, Loader2
+  ThumbsUp, Send, Bookmark, MoreHorizontal, Globe, Flame, Heart, Hand, Loader2
 } from 'lucide-react';
 import type { PostData, PostComment, ReactionType } from '../../interfaces/post.type';
 import {
-  getCommentsApi, createCommentApi, reactToPostApi, updatePostApi, deletePostApi, publishPostApi, type BackendComment
+  getCommentsApi, createCommentApi, reactToPostApi, updatePostApi, deletePostApi, publishPostApi, mapBackendPostToPostData, type BackendComment
 } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../ui/UserAvatar';
+import { PostForm } from './PostForm';
 
 const MarkdownPreview = React.lazy(() =>
   import('@uiw/react-md-editor').then((mod) => ({ default: mod.default.Markdown }))
 );
 
-export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
+export const PostCard: React.FC<{ postData: PostData; isFocused?: boolean; canManage?: boolean; onDeleted?: (postId: number) => void; onUpdated?: (post: PostData) => void }> = ({ postData, isFocused = false, canManage = false, onDeleted, onUpdated }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,17 +31,21 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [menuMessage, setMenuMessage] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
 
-  // Reaction state initialized from postData
+  
   const [reactionCounts, setReactionCounts] = useState(postData.reactionCounts || {});
   const [userReaction, setUserReaction] = useState<ReactionType | null>(postData.userReaction || null);
   const [isReacting, setIsReacting] = useState(false);
 
     const totalReactions = Object.values(reactionCounts).reduce((acc: number, count) => acc + (count || 0), 0);
     const isAuthor = Boolean(user && postData.userId && user.student_id === postData.userId);
+    const canEditPost = isAuthor || canManage;
   const [commentCount, setCommentCount] = useState(postData.commentCount || 0);
+  const canCollapseText = postData.markdownContent.length > 420 || postData.markdownContent.split('\n').length > 5;
 
-  // Load comments from backend when comment box is opened
+  
   useEffect(() => {
     if (isCommentBoxOpen && postData.rawId) {
       setIsLoadingComments(true);
@@ -58,16 +63,16 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
     const prevReaction = userReaction;
     const prevCounts = { ...reactionCounts };
 
-    // Optimistic UI update
+    
     if (prevReaction === type) {
-      // Toggling off
+      
       setUserReaction(null);
       setReactionCounts({
         ...prevCounts,
         [type]: Math.max(0, (prevCounts[type] || 1) - 1),
       });
     } else {
-      // Adding or switching
+      
       setUserReaction(type);
       const updated = { ...prevCounts };
       if (prevReaction) {
@@ -80,7 +85,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
     try {
       await reactToPostApi(postData.rawId, type);
     } catch (err) {
-      // Rollback on failure
+      
       setUserReaction(prevReaction);
       setReactionCounts(prevCounts);
     } finally {
@@ -123,7 +128,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
     }
   };
 
-  // Group comments client-side by parent_id (null = root)
+  
   const rootComments = comments.filter((c) => c.parent_id === null);
   const getReplies = (parentId: number) => comments.filter((c) => c.parent_id === parentId);
 
@@ -148,10 +153,10 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
   };
 
   return (
-    <article className="rounded-lg border border-customBorder bg-card mb-4 overflow-hidden font-sans shadow-sm">
+    <article id={`post-${postData.rawId}`} className={`rounded-2xl border bg-card mb-4 overflow-hidden font-sans shadow-sm transition-all duration-500 ${isFocused ? 'border-accent ring-2 ring-accent/30 shadow-lg shadow-accent/10' : 'border-customBorder hover:border-accent/25 hover:shadow-md'}`}>
 
-      {/* ── Header ── */}
-      <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+      {}
+      <div className="px-5 py-4 flex items-center justify-between gap-3 bg-gradient-to-r from-card to-accent/[0.025]">
         <div className="flex items-center gap-3">
           <UserAvatar name={postData.author.name} src={postData.author.avatar.startsWith('http') ? postData.author.avatar : undefined} className="h-9 w-9 rounded-md border border-accent/20 text-base" textClassName="text-base" />
             <div>
@@ -195,22 +200,10 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
             </button>
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-customBorder rounded-md shadow-xl z-20 py-1">
-                {isAuthor && (
+                {canEditPost && (
                   <>
                     <button
-                      onClick={() => {
-                        const title = prompt('Edit title:', postData.title);
-                        const desc = prompt('Edit description:', postData.markdownContent);
-                        if (title || desc) {
-                          updatePostApi(postData.rawId, {
-                            title: title || postData.title,
-                            description: desc || postData.markdownContent,
-                          }).then(() => {
-                            setMenuMessage('Post updated. Refresh the feed to see the latest version.');
-                          }).catch(() => setMenuMessage('Unable to update this post.'));
-                        }
-                        setShowMenu(false);
-                      }}
+                      onClick={() => { setIsEditing(true); setShowMenu(false); }}
                       className="w-full text-left px-3 py-1.5 text-xs text-mainText hover:bg-footer cursor-pointer"
                     >
                       Edit Post
@@ -234,7 +227,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                     <button
                       onClick={() => {
                         if (confirm('Delete this post?')) {
-                          deletePostApi(postData.rawId).then(() => setMenuMessage('Post deleted. Refresh the feed to remove it.')).catch(() => setMenuMessage('Unable to delete this post.')).finally(() => setShowMenu(false));
+                          deletePostApi(postData.rawId).then(() => onDeleted?.(postData.rawId)).catch(() => setMenuMessage('Unable to delete this post.')).finally(() => setShowMenu(false));
                         }
                       }}
                       className="w-full text-left px-3 py-1.5 text-xs text-rose-400 hover:bg-footer cursor-pointer"
@@ -258,11 +251,11 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
       </div>
       {menuMessage && <div className="mx-4 mb-2 rounded-md bg-footer px-3 py-2 text-[11px] text-subText border border-customBorder">{menuMessage}</div>}
 
-      {/* ── Content ── */}
-      <div className="px-4 pb-4 space-y-2">
-        <h2 className="text-[15px] font-semibold text-mainText leading-snug">{postData.title}</h2>
+      {}
+      <div className="px-5 pb-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-bold text-mainText leading-snug tracking-tight">{postData.title}</h2>{postData.postType === 'project' && <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-300">Project</span>}</div>
 
-        <div data-color-mode={theme} className="text-sm leading-relaxed text-mainText">
+        <div data-color-mode={theme} className={`text-sm leading-relaxed text-mainText ${canCollapseText && !isTextExpanded ? 'max-h-28 overflow-hidden' : ''}`}>
           <Suspense fallback={<p className="text-xs text-subText animate-pulse">Loading post...</p>}>
             <MarkdownPreview
               source={postData.markdownContent}
@@ -270,6 +263,12 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
             />
           </Suspense>
         </div>
+
+        {canCollapseText && (
+          <button onClick={() => setIsTextExpanded((expanded) => !expanded)} className="w-fit text-xs font-semibold text-accent hover:underline cursor-pointer">
+            {isTextExpanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
 
         {postData.tags && postData.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
@@ -282,7 +281,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
         )}
       </div>
 
-      {/* ── Media / Attachments ── */}
+      {}
       {postData.attachments && postData.attachments.length > 0 && (
         <div className="mt-2 space-y-2">
           {postData.attachments.some((a) => a.type === 'PHOTO' || a.type === 'VIDEO') && (
@@ -298,7 +297,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                 .map((asset, index) => {
                   const youtubeEmbedUrl = asset.type === 'VIDEO' ? getYouTubeEmbedUrl(asset.url) : null;
                   return (
-                    <div key={index} className="relative bg-black flex items-center justify-center max-h-96 overflow-hidden">
+                    <div key={index} className="relative m-1 rounded-xl border border-customBorder bg-black flex items-center justify-center max-h-96 overflow-hidden shadow-sm">
                       {asset.type === 'PHOTO' ? (
                         <img
                           src={asset.url}
@@ -354,7 +353,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
         </div>
       )}
 
-      {/* ── Reaction Summary Line ── */}
+      {}
       <div className="px-4 py-2.5 flex items-center justify-between text-xs text-subText border-y border-customBorder/60 bg-footer/35">
         <div className="flex items-center gap-2">
           {totalReactions > 0 ? (
@@ -377,13 +376,13 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
         </button>
       </div>
 
-      {/* ── Reaction Buttons Bar (Like, Heart, Fire, Clap) ── */}
+      {}
       <div className="px-3 py-1.5 flex items-center justify-between gap-1 text-xs font-semibold text-subText">
         {[
           { type: 'like' as const, label: 'Like', icon: ThumbsUp, activeColor: 'text-blue-400' },
           { type: 'heart' as const, label: 'Heart', icon: Heart, activeColor: 'text-red-400' },
           { type: 'fire' as const, label: 'Fire', icon: Flame, activeColor: 'text-amber-400' },
-          { type: 'clap' as const, label: 'Clap', icon: Sparkles, activeColor: 'text-purple-400' },
+          { type: 'clap' as const, label: 'Clap', icon: Hand, activeColor: 'text-purple-400' },
         ].map(({ type, label, icon: Icon, activeColor }) => {
           const isActive = userReaction === type;
           const count = reactionCounts[type] || 0;
@@ -412,7 +411,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
         </button>
       </div>
 
-      {/* ── Comments Section ── */}
+      {}
       {isCommentBoxOpen && (
         <div className="p-4 bg-footer/35 space-y-3 border-t border-customBorder/60">
           {isLoadingComments ? (
@@ -427,10 +426,12 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                   const childReplies = getReplies(root.id);
                   return (
                     <div key={root.id} className="flex items-start gap-2.5">
-                      <UserAvatar name={root.author_name || 'User'} src={root.author_pic} className="h-8 w-8 rounded-full border border-customBorder text-sm" textClassName="text-sm" />
+                      <button onClick={() => navigate(`/profile/${root.user_id}`)} className="shrink-0 rounded-full cursor-pointer" aria-label={`View ${root.author_name || 'user'} profile`}>
+                        <UserAvatar name={root.author_name || 'User'} src={root.author_pic} className="h-8 w-8 rounded-full border border-customBorder text-sm" textClassName="text-sm" />
+                      </button>
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="inline-block bg-card rounded-md border border-customBorder px-3 py-2 text-xs max-w-full">
-                          <span className="font-bold text-mainText block">{root.author_name}</span>
+                          <button onClick={() => navigate(`/profile/${root.user_id}`)} className="inline-flex rounded-md border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-bold text-accent hover:bg-accent/20 cursor-pointer text-left">{root.author_name}</button>
                           <p className="text-mainText/90 leading-relaxed mt-0.5">{root.content}</p>
                         </div>
 
@@ -449,14 +450,16 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                           </span>
                         </div>
 
-                        {/* Replies */}
+                        {}
                         {childReplies.length > 0 && (
                           <div className="pl-4 pt-1 space-y-2 border-l-2 border-customBorder/40 mt-1">
                             {childReplies.map((reply) => (
                               <div key={reply.id} className="flex items-start gap-2">
-                                <UserAvatar name={reply.author_name || 'User'} src={reply.author_pic} className="h-7 w-7 rounded-full border border-customBorder text-xs" textClassName="text-xs" />
+                                <button onClick={() => navigate(`/profile/${reply.user_id}`)} className="shrink-0 rounded-full cursor-pointer" aria-label={`View ${reply.author_name || 'user'} profile`}>
+                                  <UserAvatar name={reply.author_name || 'User'} src={reply.author_pic} className="h-7 w-7 rounded-full border border-customBorder text-xs" textClassName="text-xs" />
+                                </button>
                                 <div className="bg-card rounded-md border border-customBorder px-3 py-1.5 text-xs">
-                                  <span className="font-bold text-mainText block">{reply.author_name}</span>
+                                  <button onClick={() => navigate(`/profile/${reply.user_id}`)} className="inline-flex rounded-md border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-bold text-accent hover:bg-accent/20 cursor-pointer text-left">{reply.author_name}</button>
                                   <p className="text-subText">{reply.content}</p>
                                 </div>
                               </div>
@@ -464,7 +467,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
                           </div>
                         )}
 
-                        {/* Reply Form */}
+                        {}
                         {activeReplyId === root.id && (
                           <form onSubmit={(e) => handleAddReply(e, root.id)} className="flex items-center gap-2 pt-1 pl-2">
                             <input
@@ -491,7 +494,7 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
             </div>
           )}
 
-          {/* Root Comment Form */}
+          {}
           <form onSubmit={handleAddRootComment} className="flex items-center gap-2 pt-2 border-t border-customBorder/40">
             <div className="w-8 h-8 rounded-full bg-slate-800 border border-customBorder flex items-center justify-center text-sm shrink-0">
               👨‍💻
@@ -507,6 +510,25 @@ export const PostCard: React.FC<{ postData: PostData }> = ({ postData }) => {
               <Send className="w-3.5 h-3.5" />
             </button>
           </form>
+        </div>
+      )}
+
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button aria-label="Close edit post" onClick={() => setIsEditing(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-customBorder bg-card shadow-2xl p-6">
+            <PostForm
+              modalTitle={postData.postType === 'project' ? 'Edit Project Showcase' : 'Edit Post'}
+              initialPost={postData}
+              postType={postData.postType}
+              onClose={() => setIsEditing(false)}
+              onSaved={(saved) => {
+                onUpdated?.(mapBackendPostToPostData(saved));
+                setMenuMessage('Post updated.');
+                setIsEditing(false);
+              }}
+            />
+          </div>
         </div>
       )}
     </article>

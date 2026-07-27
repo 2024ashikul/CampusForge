@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Send, RefreshCw, Users, MessageSquare, Plus } from 'lucide-react';
 
-// --- Using your shared mock architecture ---
+
 import type { SkillLevel } from '../interfaces/student.type';
 
 interface LocalMessage {
@@ -24,7 +24,7 @@ interface LocalRoom {
   updatedAt: string;
 }
 
-// --- Initial Mock Repositories ---
+
 const INITIAL_ROOMS: LocalRoom[] = [
   {
     id: 'room-1',
@@ -85,14 +85,14 @@ export const ChatWorkspace: React.FC = () => {
   
   const messageEndRef = useRef<HTMLDivElement>(null);
 
-  // --- Auto Scroll Anchor ---
+  
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeRoomId]);
 
-  // --- Simulated Automatic Refresh Pipeline (Polling Engine) ---
+  
   useEffect(() => {
-    // Polls for "new network packets" every 8 seconds automatically
+    
     const pollingInterval = setInterval(() => {
       triggerSilentRefresh();
     }, 8000);
@@ -101,7 +101,7 @@ export const ChatWorkspace: React.FC = () => {
   }, [activeRoomId]);
 
   const triggerSilentRefresh = () => {
-    // Simulating background data fetch increments
+    
     if (activeRoomId === 'room-1' && !messages.some(m => m.id === 'simulated-pull')) {
       const backgroundPacket: LocalMessage = {
         id: 'simulated-pull',
@@ -121,10 +121,10 @@ export const ChatWorkspace: React.FC = () => {
     setTimeout(() => {
       triggerSilentRefresh();
       setIsRefreshing(false);
-    }, 6000); // Visual spinning simulation block
+    }, 6000); 
   };
 
-  // --- Message Interception Form Dispatcher ---
+  
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!typedMessage.trim()) return;
@@ -141,7 +141,7 @@ export const ChatWorkspace: React.FC = () => {
 
     setMessages([...messages, newMessage]);
     
-    // Mutate parent list structures to hold excerpt details
+    
     setRooms(prevRooms => prevRooms.map(r => {
       if (r.id === activeRoomId) {
         return { ...r, lastMessageExcerpt: typedMessage, updatedAt: 'Just now' };
@@ -163,12 +163,12 @@ export const ChatWorkspace: React.FC = () => {
   return (
     <div className="min-h-[80vh] bg-card border border-customBorder rounded-2xl overflow-hidden flex flex-col md:flex-row transition-all max-w-6xl mx-auto">
       
-      {/* ==========================================
-          LEFT COLUMN: ACTIVE ROOM CHANNELS RADAR (35%)
-          ========================================== */}
+      {
+
+}
       <div className="w-full md:w-80 bg-footer border-b md:border-b-0 md:border-r border-customBorder flex flex-col justify-between shrink-0">
         
-        {/* Workspace Operations Top Action Segment */}
+        {}
         <div>
           <div className="p-4 border-b border-customBorder flex items-center justify-between">
             <h3 className="text-sm font-black text-mainText uppercase tracking-wider">Comms Directory</h3>
@@ -181,7 +181,7 @@ export const ChatWorkspace: React.FC = () => {
             </button>
           </div>
 
-          {/* Dynamic Channels Roster Stream */}
+          {}
           <div className="p-2 space-y-1 max-h-[50vh] overflow-y-auto">
             {rooms.map((room) => {
               const isSelected = room.id === activeRoomId;
@@ -215,7 +215,7 @@ export const ChatWorkspace: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Channel Generation Action Footing */}
+        {}
         <div className="p-3 border-t border-customBorder bg-card/30">
           <button className="w-full py-2 bg-primary hover:bg-card border border-customBorder hover:border-accent text-mainText hover:text-accent font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
             <Plus size={14} strokeWidth={3} /> Establish Node Session
@@ -224,12 +224,12 @@ export const ChatWorkspace: React.FC = () => {
 
       </div>
 
-      {/* ==========================================
-          RIGHT COLUMN: COMMUNICATIONS CONSOLE VIEWPORT (65%)
-          ========================================== */}
+      {
+
+}
       <div className="flex-1 bg-primary/20 flex flex-col justify-between min-h-[500px]">
         
-        {/* Stream Channel Metadata Header */}
+        {}
         <div className="px-6 py-3.5 bg-footer border-b border-customBorder flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-xl">{currentActiveRoom?.logo}</span>
@@ -245,7 +245,7 @@ export const ChatWorkspace: React.FC = () => {
           </span>
         </div>
 
-        {/* Main Scrolling Communication Content Shell */}
+        {}
         <div className="flex-1 p-6 overflow-y-auto space-y-4">
           {filteredMessages.length === 0 ? (
             <div className="h-full flex items-center justify-center text-center opacity-60">
@@ -260,12 +260,12 @@ export const ChatWorkspace: React.FC = () => {
                   key={msg.id} 
                   className={`flex gap-3 max-w-[85%] ${isCurrentUser ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
                 >
-                  {/* Participant Avatar */}
+                  {}
                   <div className="w-8 h-8 rounded-lg bg-footer border border-customBorder flex items-center justify-center text-sm shrink-0 shadow-xs">
                     {msg.senderAvatar}
                   </div>
 
-                  {/* Packet Bubble Element Wrapper */}
+                  {}
                   <div className="space-y-1">
                     <div className={`flex items-baseline gap-2 ${isCurrentUser ? 'justify-end' : ''}`}>
                       <span className="text-[10px] font-black text-mainText">{msg.senderName}</span>
@@ -286,7 +286,7 @@ export const ChatWorkspace: React.FC = () => {
           <div ref={messageEndRef} />
         </div>
 
-        {/* Message Entry Payload Dispatch Control Input */}
+        {}
         <form 
           onSubmit={handleSendMessage}
           className="p-4 bg-footer border-t border-customBorder flex gap-2 items-center"

@@ -14,7 +14,7 @@ export interface SkillStudent {
 
 export const API_BASE_URL = 'http://localhost:8000/api';
 
-// ─── Auth Header Helper ───────────────────────────────────────────────────────
+
 
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('campusforge-token');
@@ -29,7 +29,7 @@ export interface AuthTokenResponse {
   user: BackendUser;
 }
 
-// ─── Auth API ─────────────────────────────────────────────────────────────────
+
 
 export async function loginApi(student_id: string, email: string, password: string): Promise<AuthTokenResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -76,7 +76,7 @@ export async function getDepartmentCodesApi(): Promise<Record<string, string>> {
   return res.json();
 }
 
-// ─── Posts API ────────────────────────────────────────────────────────────────
+
 
 export async function getPostsApi(filters?: {
   post_type?: string;
@@ -107,11 +107,11 @@ export async function getPostByIdApi(postId: number): Promise<BackendPost> {
   return res.json();
 }
 
-// api.ts
-// ─── Post Creation API ────────────────────────────────────────────────────────
+
+
 
 export const createPostApi = async (postPayload: any): Promise<BackendPost> => {
-  // Always use getAuthHeaders() to guarantee the correct token key ('campusforge-token')
+  
   const response = await fetch(`${API_BASE_URL}/posts`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -123,13 +123,13 @@ export const createPostApi = async (postPayload: any): Promise<BackendPost> => {
     try {
       const errorJson = await response.json();
       if (errorJson.detail) {
-        // Pretty-print structured Pydantic validation errors
+        
         errorMsg = typeof errorJson.detail === 'object'
           ? JSON.stringify(errorJson.detail, null, 2)
           : errorJson.detail;
       }
     } catch {
-      // Empty response or raw HTML error fallback
+      
     }
     throw new Error(errorMsg);
   }
@@ -180,7 +180,7 @@ export async function deletePostApi(postId: number): Promise<void> {
   }
 }
 
-// ─── Comments API ─────────────────────────────────────────────────────────────
+
 
 export async function getCommentsApi(postId: number): Promise<BackendComment[]> {
   const res = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
@@ -230,16 +230,16 @@ export async function deleteCommentApi(postId: number, commentId: number): Promi
   }
 }
 
-// ─── Reactions API ────────────────────────────────────────────────────────────
+
 
 export async function reactToPostApi(postId: number, reaction_type: ReactionType): Promise<void> {
-  // Toggle: posting the same reaction removes it, different reaction switches it
+  
   const res = await fetch(`${API_BASE_URL}/posts/${postId}/reactions`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ reaction_type }),
   });
-  // 204 = removed (toggle off), 201 = added, 200 = switched
+  
   if (!res.ok && res.status !== 204) {
     const err = await res.json().catch(() => ({ detail: 'Failed to react' }));
     throw new Error(err.detail || `HTTP error ${res.status}`);
@@ -257,7 +257,7 @@ export async function removeReactionApi(postId: number): Promise<void> {
   }
 }
 
-// ─── Clubs API ────────────────────────────────────────────────────────────────
+
 
 export async function getClubsApi(): Promise<BackendClub[]> {
   const res = await fetch(`${API_BASE_URL}/clubs`, { headers: getAuthHeaders() });
@@ -356,7 +356,7 @@ export async function updateClubMemberApi(
   return res.json();
 }
 
-// ─── Events API ───────────────────────────────────────────────────────────────
+
 
 export async function getEventsApi(): Promise<BackendEvent[]> {
   const res = await fetch(`${API_BASE_URL}/events`, { headers: getAuthHeaders() });
@@ -372,7 +372,7 @@ export async function getEventByIdApi(eventId: number): Promise<BackendEvent> {
 
 export async function createEventApi(payload: {
   title: string;
-  short_description: string;
+  description: string;
   event_type: string;
   status?: string;
   start_time: string;
@@ -396,13 +396,12 @@ export async function createEventApi(payload: {
 
 export async function updateEventApi(eventId: number, updates: {
   title?: string;
-  short_description?: string;
+  description?: string;
   event_type?: string;
   status?: string;
   start_time?: string;
   end_time?: string;
   tags?: string[];
-  results?: string;
   details?: Partial<EventDetails>;
   settings?: Partial<EventSettings>;
 }): Promise<BackendEvent> {
@@ -429,6 +428,22 @@ export async function publishEventResultsApi(eventId: number, resultsText: strin
     throw new Error(err.detail || 'Failed to publish results');
   }
   return res.json();
+}
+
+export async function deleteEventApi(eventId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to delete event' }));
+    throw new Error(err.detail || 'Failed to delete event');
+  }
+}
+
+export async function deleteClubApi(clubId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/clubs/${clubId}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to delete club' }));
+    throw new Error(err.detail || 'Failed to delete club');
+  }
 }
 
 export async function registerEventApi(
@@ -516,7 +531,7 @@ export async function removeEventTeamApi(eventId: number, teamName: string): Pro
   return res.json();
 }
 
-// ─── Users API ────────────────────────────────────────────────────────────────
+
 
 export async function getUsersApi(): Promise<BackendUser[]> {
   try {
@@ -606,8 +621,8 @@ export async function uploadFileApi(file: File): Promise<{ url: string }> {
   const token = localStorage.getItem('campusforge-token');
   const res = await fetch(`${API_BASE_URL}/uploads/file`, {
     method: 'POST',
-    // Do not set Content-Type here: the browser adds the multipart boundary
-    // required by FastAPI when sending FormData.
+    
+    
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
   });
@@ -618,9 +633,9 @@ export async function uploadFileApi(file: File): Promise<{ url: string }> {
   return res.json();
 }
 
-// ─── Data Mappers ─────────────────────────────────────────────────────────────
 
-/** Map a BackendPost to the PostData shape used by the UI */
+
+
 export function mapBackendPostToPostData(bp: BackendPost): PostData {
   const isClub = bp.author_association === 'CLUB' || bp.club_id !== null;
 
@@ -660,7 +675,7 @@ export function mapBackendPostToPostData(bp: BackendPost): PostData {
   };
 }
 
-/** Map a BackendEvent to the legacy EventData shape used by Event.tsx */
+
 export function mapBackendEventToEventData(be: BackendEvent): EventData {
   const det = be.details || {};
   const set = be.settings || {};
@@ -670,7 +685,7 @@ export function mapBackendEventToEventData(be: BackendEvent): EventData {
     type: (be.event_type as any) || 'workshop',
     status: (be.status as any) || 'upcoming',
     title: be.title,
-    shortDescription: be.short_description,
+    shortDescription: be.description,
     clubName: be.club_title || 'Campus Organization',
     tags: be.tags || [],
     startTime: be.start_time,
@@ -689,12 +704,12 @@ export function mapBackendEventToEventData(be: BackendEvent): EventData {
       isResultsPublished: set.is_results_public,
       isParticipationPublic: set.is_attendees_public,
     },
-    descriptionMarkdown: det.description_markdown || be.short_description,
-    resultsSpreadsheetUrl: be.results || null,
+    descriptionMarkdown: det.description_markdown || be.description,
+    resultsSpreadsheetUrl: det.results || null,
   };
 }
 
-/** Map a BackendClub to a normalized display object */
+
 export function mapBackendClubToDisplay(bc: BackendClub) {
   const det = bc.details || {};
   const set = bc.settings || {};
