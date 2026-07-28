@@ -95,7 +95,7 @@ export default function EventsPage() {
             title: be.title,
             shortDescription: be.description,
             clubName: be.club_title || 'Campus Organization',
-            tags: be.tags || ['Event'],
+            tags: be.details?.tags || ['Event'],
             date: dt.date,
             time: dt.time,
             location: be.details?.location || 'Main Auditorium',

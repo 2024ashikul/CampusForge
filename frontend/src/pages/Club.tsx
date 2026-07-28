@@ -46,7 +46,6 @@ import {
 type TabKey = 'public' | 'announcements' | 'events' | 'members' | 'settings';
 
 interface ClubMember {
-  id: number;
   user_id: string;
   student_id: string;
   name: string;
@@ -252,7 +251,7 @@ export const Club: React.FC = () => {
     }
   };
 
-  const handlePromoteToAdmin = async (memberId: number, currentRole: string) => {
+  const handlePromoteToAdmin = async (userId: string, currentRole: string) => {
     if (!isAdmin) return;
     if (isAdminRole(currentRole) && approvedAdminCount <= 1) {
       showNotification('Assign another admin before demoting the only admin.');
@@ -260,7 +259,7 @@ export const Club: React.FC = () => {
     }
     const newRole = isAdminRole(currentRole) ? 'Member' : 'Admin';
     try {
-      await updateClubMemberApi(numericId, memberId, { role: newRole });
+      await updateClubMemberApi(numericId, userId, { role: newRole });
       showNotification(`Updated role to ${newRole}`);
       const updatedMembers = await getClubMembersApi(numericId);
       setMembers(updatedMembers);
@@ -269,10 +268,10 @@ export const Club: React.FC = () => {
     }
   };
 
-  const handleApproveMember = async (memberId: number) => {
+  const handleApproveMember = async (userId: string) => {
     if (!isAdmin) return;
     try {
-      await updateClubMemberApi(numericId, memberId, { status: 'approved' });
+      await updateClubMemberApi(numericId, userId, { status: 'approved' });
       showNotification('Member approved successfully!');
       const updatedMembers = await getClubMembersApi(numericId);
       setMembers(updatedMembers);
@@ -521,7 +520,7 @@ export const Club: React.FC = () => {
                     const isOnlyAdmin = isAdminRole(m.role) && m.status === 'approved' && approvedAdminCount <= 1;
                     return (
                     <div
-                      key={m.id}
+                      key={`${numericId}-${m.user_id}`}
                       onClick={() => navigate(`/profile/${m.student_id}`)}
                       className="py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-primary/40 rounded-xl transition-colors px-2 -mx-2"
                     >
@@ -544,14 +543,14 @@ export const Club: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {m.status === 'pending' && (
                             <button
-                              onClick={(event) => { event.stopPropagation(); handleApproveMember(m.id); }}
+                              onClick={(event) => { event.stopPropagation(); handleApproveMember(m.user_id); }}
                               className="px-2.5 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg hover:bg-emerald-500 cursor-pointer"
                             >
                               Approve
                             </button>
                           )}
                           <button
-                            onClick={(event) => { event.stopPropagation(); handlePromoteToAdmin(m.id, m.role); }}
+                            onClick={(event) => { event.stopPropagation(); handlePromoteToAdmin(m.user_id, m.role); }}
                             disabled={isOnlyAdmin}
                             title={isOnlyAdmin ? 'Assign another admin before demoting the only admin' : undefined}
                             className={`px-2.5 py-1 border text-[11px] font-bold rounded-lg ${isOnlyAdmin ? 'bg-footer text-subText border-customBorder cursor-not-allowed' : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30 cursor-pointer'}`}

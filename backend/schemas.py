@@ -158,6 +158,7 @@ class EventDetails(BaseModel):
     virtual_link: Optional[str] = None
     description_markdown: Optional[str] = None
     results: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 class EventSettings(BaseModel):
@@ -186,8 +187,6 @@ class EventBase(BaseModel):
     start_time: str  
     end_time: Optional[str] = None  
     club_id: Optional[int] = None
-    event_id: Optional[int] = None
-    tags: Optional[List[str]] = None
     details: Optional[EventDetails] = None
     settings: Optional[EventSettings] = None
 
@@ -203,7 +202,6 @@ class EventUpdate(BaseModel):
     status: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    tags: Optional[List[str]] = None
     details: Optional[EventDetails] = None
     settings: Optional[EventSettings] = None
 
@@ -256,7 +254,7 @@ class PostBase(BaseModel):
 
 
 class PostCreate(PostBase):
-    pass
+    event_id: Optional[int] = None
 
 
 class PostUpdate(BaseModel):
@@ -264,7 +262,6 @@ class PostUpdate(BaseModel):
     description: Optional[str] = None
     post_type: Optional[str] = None
     status: Optional[str] = None
-    event_id: Optional[int] = None
     tags: Optional[List[str]] = None
     media: Optional[List[PostMediaSchema]] = None
 
@@ -316,7 +313,6 @@ class PostReactionCreate(BaseModel):
 
 
 class PostReactionResponse(BaseModel):
-    id: int
     post_id: int
     user_id: str  
     reaction_type: str

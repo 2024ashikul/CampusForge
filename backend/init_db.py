@@ -34,18 +34,17 @@ SCHEMA_STATEMENTS = (
     """,
     """
     CREATE TABLE IF NOT EXISTS club_members (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
         club_id INTEGER NOT NULL REFERENCES club(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
         role TEXT DEFAULT 'Member',
         status TEXT DEFAULT 'approved',
         joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (club_id, user_id)
+        PRIMARY KEY (club_id, user_id)
     )
     """,
     """
     CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,  
         title TEXT NOT NULL,
         description TEXT NOT NULL,
         event_type TEXT DEFAULT 'workshop',
@@ -53,7 +52,6 @@ SCHEMA_STATEMENTS = (
         start_time TEXT NOT NULL,
         end_time TEXT,
         club_id INTEGER REFERENCES club(id) ON DELETE CASCADE,
-        tags TEXT,
         details TEXT,
         settings TEXT
     )
@@ -79,7 +77,6 @@ SCHEMA_STATEMENTS = (
         status TEXT NOT NULL DEFAULT 'published',
         user_id TEXT REFERENCES user(student_id) ON DELETE CASCADE,
         club_id INTEGER REFERENCES club(id) ON DELETE CASCADE,
-        event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """,
@@ -111,11 +108,10 @@ SCHEMA_STATEMENTS = (
     """,
     """
     CREATE TABLE IF NOT EXISTS post_reactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
         post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
         reaction_type TEXT NOT NULL DEFAULT 'like',
-        UNIQUE (post_id, user_id)
+        PRIMARY KEY (post_id, user_id)
     )
     """,
 )
@@ -127,8 +123,110 @@ def init_db() -> None:
         statements = MYSQL_SCHEMA_STATEMENTS if db.mysql else SCHEMA_STATEMENTS
         for statement in statements:
             db.execute(statement)
+        _migrate_club_members_primary_key(db)
+        _migrate_post_reactions_primary_key(db)
 
     print("[Init DB] Raw SQL schema is ready.")
+
+
+def _migrate_club_members_primary_key(db) -> None:
+    """Replace the legacy surrogate member ID without discarding member rows.
+
+    SQLite cannot drop a primary-key column in place, so its table is rebuilt
+    transactionally from its existing columns. MySQL can make the equivalent
+    change in place. Both paths are safe to run repeatedly.
+    """
+    if db.mysql:
+        columns = {row.Field for row in db.all("SHOW COLUMNS FROM club_members")}
+        if "id" in columns:
+            db.execute("ALTER TABLE club_members DROP PRIMARY KEY, DROP COLUMN id, ADD PRIMARY KEY (club_id, user_id)")
+        return
+
+    columns = db.all("PRAGMA table_info(club_members)")
+    if not any(column.name == "id" for column in columns):
+        return
+
+    # Keep every existing non-ID column, including fields added by deployments.
+    column_definitions = []
+    for column in columns:
+        if column.name == "id":
+            continue
+        definition = f'"{column.name}" {column.type or "TEXT"}'
+        if column.notnull:
+            definition += " NOT NULL"
+        if column.dflt_value is not None:
+            definition += f" DEFAULT {column.dflt_value}"
+        column_definitions.append(definition)
+
+    foreign_keys = db.all("PRAGMA foreign_key_list(club_members)")
+    for foreign_key in foreign_keys:
+        clause = (
+            f'FOREIGN KEY ("{foreign_key.__dict__["from"]}") '
+            f'REFERENCES "{foreign_key.table}" ("{foreign_key.to}")'
+        )
+        if foreign_key.on_delete and foreign_key.on_delete != "NO ACTION":
+            clause += f" ON DELETE {foreign_key.on_delete}"
+        if foreign_key.on_update and foreign_key.on_update != "NO ACTION":
+            clause += f" ON UPDATE {foreign_key.on_update}"
+        column_definitions.append(clause)
+    column_definitions.append("PRIMARY KEY (club_id, user_id)")
+
+    retained_names = [column.name for column in columns if column.name != "id"]
+    quoted_names = ", ".join(f'"{name}"' for name in retained_names)
+    db.execute("PRAGMA foreign_keys = OFF")
+    db.execute(f"CREATE TABLE club_members_new ({', '.join(column_definitions)})")
+    db.execute(f"INSERT INTO club_members_new ({quoted_names}) SELECT {quoted_names} FROM club_members")
+    db.execute("DROP TABLE club_members")
+    db.execute("ALTER TABLE club_members_new RENAME TO club_members")
+    db.execute("PRAGMA foreign_keys = ON")
+
+
+def _migrate_post_reactions_primary_key(db) -> None:
+    """Replace the legacy reaction ID while retaining every reaction row."""
+    if db.mysql:
+        columns = {row.Field for row in db.all("SHOW COLUMNS FROM post_reactions")}
+        if "id" in columns:
+            db.execute("ALTER TABLE post_reactions DROP PRIMARY KEY, DROP COLUMN id, ADD PRIMARY KEY (post_id, user_id)")
+        return
+
+    columns = db.all("PRAGMA table_info(post_reactions)")
+    if not any(column.name == "id" for column in columns):
+        return
+
+    column_definitions = []
+    for column in columns:
+        if column.name == "id":
+            continue
+        definition = f'"{column.name}" {column.type or "TEXT"}'
+        if column.notnull:
+            definition += " NOT NULL"
+        if column.dflt_value is not None:
+            definition += f" DEFAULT {column.dflt_value}"
+        column_definitions.append(definition)
+
+    foreign_keys = db.all("PRAGMA foreign_key_list(post_reactions)")
+    for foreign_key in foreign_keys:
+        clause = (
+            f'FOREIGN KEY ("{foreign_key.__dict__["from"]}") '
+            f'REFERENCES "{foreign_key.table}" ("{foreign_key.to}")'
+        )
+        if foreign_key.on_delete and foreign_key.on_delete != "NO ACTION":
+            clause += f" ON DELETE {foreign_key.on_delete}"
+        if foreign_key.on_update and foreign_key.on_update != "NO ACTION":
+            clause += f" ON UPDATE {foreign_key.on_update}"
+        column_definitions.append(clause)
+    column_definitions.append("PRIMARY KEY (post_id, user_id)")
+
+    retained_names = [column.name for column in columns if column.name != "id"]
+    quoted_names = ", ".join(f'"{name}"' for name in retained_names)
+    db.execute("PRAGMA foreign_keys = OFF")
+    db.execute(f"CREATE TABLE post_reactions_new ({', '.join(column_definitions)})")
+    db.execute(f"INSERT INTO post_reactions_new ({quoted_names}) SELECT {quoted_names} FROM post_reactions")
+    db.execute("DROP TABLE post_reactions")
+    db.execute("ALTER TABLE post_reactions_new RENAME TO post_reactions")
+    db.execute("PRAGMA foreign_keys = ON")
+
+
 MYSQL_SCHEMA_STATEMENTS = (
     """CREATE TABLE IF NOT EXISTS user (
         student_id VARCHAR(20) PRIMARY KEY, name VARCHAR(255) NOT NULL,
@@ -147,9 +245,9 @@ MYSQL_SCHEMA_STATEMENTS = (
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB""",
     """CREATE TABLE IF NOT EXISTS club_members (
-        id INT AUTO_INCREMENT PRIMARY KEY, club_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        club_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
         role VARCHAR(40) NOT NULL DEFAULT 'Member', status VARCHAR(20) NOT NULL DEFAULT 'approved',
-        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY club_member_unique (club_id, user_id),
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (club_id, user_id),
         FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
     ) ENGINE=InnoDB""",
@@ -157,7 +255,7 @@ MYSQL_SCHEMA_STATEMENTS = (
         id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT NOT NULL,
         event_type VARCHAR(50) NOT NULL DEFAULT 'workshop', status VARCHAR(30) NOT NULL DEFAULT 'upcoming',
         start_time VARCHAR(64) NOT NULL, end_time VARCHAR(64) NULL, club_id INT NULL,
-        tags JSON NULL, details JSON NULL, settings JSON NULL,
+        details JSON NULL, settings JSON NULL,
         FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE
     ) ENGINE=InnoDB""",
     """CREATE TABLE IF NOT EXISTS event_registrants (
@@ -171,11 +269,10 @@ MYSQL_SCHEMA_STATEMENTS = (
     """CREATE TABLE IF NOT EXISTS posts (
         id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT NOT NULL,
         post_type VARCHAR(50) NOT NULL DEFAULT 'post', status VARCHAR(30) NOT NULL DEFAULT 'published',
-        user_id VARCHAR(20) NULL, club_id INT NULL, event_id INT NULL,
+        user_id VARCHAR(20) NULL, club_id INT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE,
-        FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE
     ) ENGINE=InnoDB""",
     """CREATE TABLE IF NOT EXISTS post_tags (
         post_id INT NOT NULL, value VARCHAR(100) NOT NULL, PRIMARY KEY (post_id, value),
@@ -194,8 +291,8 @@ MYSQL_SCHEMA_STATEMENTS = (
         FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
     ) ENGINE=InnoDB""",
     """CREATE TABLE IF NOT EXISTS post_reactions (
-        id INT AUTO_INCREMENT PRIMARY KEY, post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
-        reaction_type VARCHAR(20) NOT NULL DEFAULT 'like', UNIQUE KEY post_user_reaction (post_id, user_id),
+        post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        reaction_type VARCHAR(20) NOT NULL DEFAULT 'like', PRIMARY KEY (post_id, user_id),
         FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
     ) ENGINE=InnoDB""",

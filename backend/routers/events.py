@@ -36,11 +36,6 @@ def _settings(e):
     return _parse(e.settings, EventSettings)
 
 
-def _tags(e):
-    try:
-        return json.loads(e.tags) if e.tags else []
-    except json.JSONDecodeError:
-        return []
 
 
 def _event(db, eid):
@@ -94,7 +89,7 @@ def format_event_response(e, current_user_student_id=None, db: Database | None =
         "start_time": e.start_time,
         "end_time": e.end_time,
         "club_id": e.club_id,
-        "tags": _tags(e),
+        "tags": _details(e).tags or [],
         "details": _details(e),
         "settings": _settings(e),
         "club_title": club.title if club else "Campus Organization",
@@ -137,7 +132,7 @@ def get_event_by_id(
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(event_in: EventCreate, db=Depends(get_db), current_user=Depends(get_current_user)):
     c = db.execute(
-        "INSERT INTO events (title,description,event_type,status,start_time,end_time,club_id,tags,details,settings) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO events (title,description,event_type,status,start_time,end_time,club_id,details,settings) VALUES (?,?,?,?,?,?,?,?,?)",
         (
             event_in.title,
             event_in.description,
@@ -146,7 +141,6 @@ def create_event(event_in: EventCreate, db=Depends(get_db), current_user=Depends
             event_in.start_time,
             event_in.end_time,
             event_in.club_id,
-            json.dumps(event_in.tags) if event_in.tags is not None else None,
             json.dumps((event_in.details or EventDetails()).model_dump()),
             json.dumps((event_in.settings or EventSettings()).model_dump()),
         ),
@@ -181,8 +175,7 @@ def update_event(
         ]
         if getattr(updates, k) is not None
     }
-    if updates.tags is not None:
-        vals["tags"] = json.dumps(updates.tags)
+
     if updates.details is not None:
         d = _details(e).model_dump()
         d.update({k: v for k, v in updates.details.model_dump().items() if v is not None})

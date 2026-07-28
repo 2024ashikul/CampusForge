@@ -6,6 +6,7 @@ export interface EventDetails {
   virtual_link?: string | null;
   description_markdown?: string | null;
   results?: string | null;
+  tags?: string[] | null;
 }
 
 export interface EventSettings {
@@ -25,7 +26,6 @@ export interface BackendEvent {
   start_time: string;             
   end_time?: string | null;       
   club_id?: number | null;
-  tags?: string[] | null;
   details?: EventDetails | null;
   settings?: EventSettings | null;
   club_title?: string;

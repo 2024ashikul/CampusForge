@@ -36,6 +36,16 @@ def _sync_media(db, pid, media):
         )
 
 
+def _get_event_id_for_post(db, pid):
+    row = db.one("SELECT value FROM post_tags WHERE post_id=? AND value LIKE 'event_ref:%'", (pid,))
+    if row:
+        try:
+            return int(row.value.split(":")[1])
+        except (ValueError, IndexError):
+            pass
+    return None
+
+
 def format_post_response(p, current_user_id=None, db: Database | None = None):
     if db is None:
         raise ValueError("A database connection is required to format a post response.")
@@ -72,8 +82,12 @@ def format_post_response(p, current_user_id=None, db: Database | None = None):
         "status": p.status,
         "user_id": p.user_id,
         "club_id": p.club_id,
-        "event_id": p.event_id,
-        "tags": [x.value for x in db.all("SELECT value FROM post_tags WHERE post_id=?", (p.id,))],
+        "event_id": _get_event_id_for_post(db, p.id),
+        "tags": [
+            x.value
+            for x in db.all("SELECT value FROM post_tags WHERE post_id=?", (p.id,))
+            if not x.value.startswith("event_ref:")
+        ],
         "media": [
             {
                 "id": x.id,
@@ -115,11 +129,13 @@ def list_posts(
     params = []
     if tag:
         sql += " JOIN post_tags t ON t.post_id=p.id"
+    if event_id:
+        sql += " JOIN post_tags et ON et.post_id=p.id AND et.value=?"
+        params.append(f"event_ref:{event_id}")
     conditions = []
     for column, value in [
         ("p.post_type", post_type),
         ("p.club_id", club_id),
-        ("p.event_id", event_id),
         ("p.user_id", user_id),
         ("p.status", status),
         ("t.value", tag),
@@ -172,7 +188,7 @@ def create_post(
         if not check_is_event_admin(event, current_user.student_id, db):
             raise HTTPException(403, "Only event admins can publish announcements")
     c = db.execute(
-        "INSERT INTO posts (title,description,post_type,status,user_id,club_id,event_id) VALUES (?,?,?,?,?,?,?)",
+        "INSERT INTO posts (title,description,post_type,status,user_id,club_id) VALUES (?,?,?,?,?,?)",
         (
             post_in.title,
             post_in.description,
@@ -180,11 +196,13 @@ def create_post(
             post_in.status,
             None if post_in.club_id else current_user.student_id,
             post_in.club_id,
-            post_in.event_id,
         ),
     )
     pid = c.lastrowid
-    _sync_tags(db, pid, post_in.tags or [])
+    tags_to_sync = list(post_in.tags or [])
+    if post_in.event_id:
+        tags_to_sync.append(f"event_ref:{post_in.event_id}")
+    _sync_tags(db, pid, tags_to_sync)
     _sync_media(db, pid, post_in.media or [])
     db.commit()
     p = _post(db, pid)
@@ -235,7 +253,7 @@ def update_post(
     _require_post_manager(p, current_user.student_id, db, "edit")
     vals = {
         k: getattr(updates, k)
-        for k in ["title", "description", "post_type", "status", "event_id"]
+        for k in ["title", "description", "post_type", "status"]
         if getattr(updates, k) is not None
     }
     if vals:
@@ -244,7 +262,11 @@ def update_post(
             tuple(vals.values()) + (post_id,),
         )
     if updates.tags is not None:
-        _sync_tags(db, post_id, updates.tags)
+        event_id = _get_event_id_for_post(db, post_id)
+        tags_to_sync = list(updates.tags)
+        if event_id:
+            tags_to_sync.append(f"event_ref:{event_id}")
+        _sync_tags(db, post_id, tags_to_sync)
     if updates.media is not None:
         _sync_media(db, post_id, updates.media)
     db.commit()
@@ -284,10 +306,11 @@ def _require_post_manager(post, student_id, db, action: str) -> None:
         if club and check_is_club_admin(club, student_id, db):
             return
         raise HTTPException(403, f"Club admin permissions required to {action} this post")
-    if post.event_id:
+    event_id = _get_event_id_for_post(db, post.id)
+    if event_id:
         from routers.events import check_is_event_admin
 
-        event = db.one("SELECT * FROM events WHERE id=?", (post.event_id,))
+        event = db.one("SELECT * FROM events WHERE id=?", (event_id,))
         if event and check_is_event_admin(event, student_id, db):
             return
         raise HTTPException(403, f"Event admin permissions required to {action} this post")

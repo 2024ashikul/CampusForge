@@ -100,6 +100,63 @@ export const Event: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('details');
   const [notification, setNotification] = useState<string | null>(null);
 
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    if (!eventData?.start_time || eventData.status !== 'upcoming') {
+      setTimeLeft(null);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const rawDate = eventData.start_time.includes('T')
+        ? eventData.start_time
+        : eventData.start_time.replace(' ', 'T');
+      const target = new Date(rawDate).getTime();
+      const now = Date.now();
+      const diff = target - now;
+
+      if (isNaN(target) || diff <= 0) {
+        setTimeLeft(null);
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [eventData?.start_time, eventData?.status]);
+
+  const countdownNode = useMemo(() => {
+    if (!timeLeft || eventData?.status !== 'upcoming') return null;
+    return (
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card/90 border border-accent/40 text-xs font-mono shadow-md backdrop-blur-md">
+        <Clock className="w-3.5 h-3.5 text-accent animate-pulse shrink-0" />
+        <span className="font-bold text-[10px] uppercase tracking-wider text-subText shrink-0 mr-0.5">Starts In</span>
+        <div className="flex items-center gap-1">
+          {timeLeft.days > 0 && (
+            <>
+              <span className="font-bold text-mainText bg-primary px-1.5 py-0.5 rounded border border-customBorder">{timeLeft.days}d</span>
+              <span className="text-subText font-bold">:</span>
+            </>
+          )}
+          <span className="font-bold text-mainText bg-primary px-1.5 py-0.5 rounded border border-customBorder">{String(timeLeft.hours).padStart(2, '0')}h</span>
+          <span className="text-subText font-bold">:</span>
+          <span className="font-bold text-mainText bg-primary px-1.5 py-0.5 rounded border border-customBorder">{String(timeLeft.minutes).padStart(2, '0')}m</span>
+          <span className="text-subText font-bold">:</span>
+          <span className="font-bold text-accent bg-accent/20 px-1.5 py-0.5 rounded border border-accent/40">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+        </div>
+      </div>
+    );
+  }, [timeLeft, eventData?.status]);
+
   
   const [isPublishResultsOpen, setIsPublishResultsOpen] = useState(false);
   const [isPostAnnounceOpen, setIsPostAnnounceOpen] = useState(false);
@@ -435,6 +492,7 @@ export const Event: React.FC = () => {
         userRole={isAdmin ? 'ADMIN' : (eventData?.is_registered ? 'ENROLLED' : 'EXTERNAL')}
         isJoined={eventData?.is_registered}
         onAction={eventData?.is_registered ? undefined : openRegistration}
+        countdown={countdownNode}
       />
 
       <div className="max-w-[1180px] mx-auto px-4 sm:px-5">

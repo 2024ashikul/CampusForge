@@ -21,6 +21,7 @@ interface TopPortionProps {
   onAction?: () => void;
   actionLabel?: string;
   isJoined?: boolean;
+  countdown?: React.ReactNode;
 }
 
 export const TopPortion: React.FC<TopPortionProps> = ({
@@ -40,6 +41,7 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   onAction,
   actionLabel,
   isJoined,
+  countdown,
 }) => {
   const defaultAction =
     entityType === 'club'
@@ -79,7 +81,7 @@ export const TopPortion: React.FC<TopPortionProps> = ({
               </div>
             </div>
 
-            <div className="sm:pb-1">
+            <div className="sm:pb-1 flex flex-wrap items-center gap-2.5">
               {isJoined ? (
                 <span className="btn-secondary w-full sm:w-auto text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
                   <Check className="w-4 h-4" /> {entityType === 'club' ? 'Member' : 'Registered'}
@@ -91,6 +93,7 @@ export const TopPortion: React.FC<TopPortionProps> = ({
                   <UserPlus className="w-4 h-4" /> {label}
                 </button>
               ) : null}
+              {countdown}
             </div>
           </div>
 

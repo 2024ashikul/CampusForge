@@ -323,7 +323,6 @@ export async function joinClubApi(
 }
 
 export async function getClubMembersApi(clubId: number): Promise<Array<{
-  id: number;
   user_id: string;
   name: string;
   email: string;
@@ -341,10 +340,10 @@ export async function getClubMembersApi(clubId: number): Promise<Array<{
 
 export async function updateClubMemberApi(
   clubId: number,
-  memberId: number,
+  userId: string,
   updates: { role?: string; status?: string }
 ): Promise<any> {
-  const res = await fetch(`${API_BASE_URL}/clubs/${clubId}/members/${memberId}`, {
+  const res = await fetch(`${API_BASE_URL}/clubs/${clubId}/members/${encodeURIComponent(userId)}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(updates),
@@ -378,7 +377,6 @@ export async function createEventApi(payload: {
   start_time: string;
   end_time?: string;
   club_id?: number;
-  tags?: string[];
   details?: Partial<EventDetails>;
   settings?: Partial<EventSettings>;
 }): Promise<BackendEvent> {
@@ -401,7 +399,6 @@ export async function updateEventApi(eventId: number, updates: {
   status?: string;
   start_time?: string;
   end_time?: string;
-  tags?: string[];
   details?: Partial<EventDetails>;
   settings?: Partial<EventSettings>;
 }): Promise<BackendEvent> {
@@ -687,7 +684,7 @@ export function mapBackendEventToEventData(be: BackendEvent): EventData {
     title: be.title,
     shortDescription: be.description,
     clubName: be.club_title || 'Campus Organization',
-    tags: be.tags || [],
+    tags: be.details?.tags || [],
     startTime: be.start_time,
     endTime: be.end_time || null,
     location: det.location || 'TBA',

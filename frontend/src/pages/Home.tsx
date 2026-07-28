@@ -124,7 +124,7 @@ export const Home: React.FC = () => {
       ...clubs.filter((club) => matches([club.title, club.description, club.details?.category, club.details?.base_department])).map((club) => ({
         id: `club-${club.id}`, kind: 'club' as const, title: club.title, detail: `${club.member_count} members`, href: `/club/${club.id}`,
       })),
-      ...events.filter((event) => matches([event.title, event.description, event.club_title, event.details?.location, ...(event.tags || [])])).map((event) => ({
+      ...events.filter((event) => matches([event.title, event.description, event.club_title, event.details?.location, ...(event.details?.tags || [])])).map((event) => ({
         id: `event-${event.id}`, kind: 'event' as const, title: event.title, detail: event.club_title || event.event_type, href: `/event/${event.id}`,
       })),
     ].slice(0, 8);

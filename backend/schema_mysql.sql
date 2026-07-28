@@ -19,9 +19,9 @@ details JSON NULL, settings JSON NULL, created_at DATETIME DEFAULT CURRENT_TIMES
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS club_members (
-id INT AUTO_INCREMENT PRIMARY KEY, club_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+club_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
 role VARCHAR(40) NOT NULL DEFAULT 'Member', status VARCHAR(20) NOT NULL DEFAULT 'approved',
-joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY club_member_unique (club_id, user_id),
+joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (club_id, user_id),
 FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE,
 FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -73,8 +73,8 @@ FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS post_reactions (
-id INT AUTO_INCREMENT PRIMARY KEY, post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
-reaction_type VARCHAR(20) NOT NULL DEFAULT 'like', UNIQUE KEY post_user_reaction (post_id, user_id),
+post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+reaction_type VARCHAR(20) NOT NULL DEFAULT 'like', PRIMARY KEY (post_id, user_id),
 FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
 FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

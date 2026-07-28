@@ -46,14 +46,14 @@ CREATE TABLE IF NOT EXISTS [club] (
 
 
 CREATE TABLE IF NOT EXISTS [club_members] (
-    [id]             INTEGER PRIMARY KEY AUTOINCREMENT,
     [club_id]        INTEGER NOT NULL REFERENCES [club]([id]) ON DELETE CASCADE,
-    [user_id]        INTEGER NOT NULL REFERENCES [user]([id]) ON DELETE CASCADE,
+    [user_id]        TEXT NOT NULL REFERENCES [user]([student_id]) ON DELETE CASCADE,
     [role]           TEXT    NOT NULL DEFAULT 'Member',
     [status]         TEXT    NOT NULL DEFAULT 'approved',
     [payment_status] TEXT    NOT NULL DEFAULT 'completed',
     [payment_method] TEXT,
-    [joined_at]      DATETIME DEFAULT CURRENT_TIMESTAMP
+    [joined_at]      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ([club_id], [user_id])
 );
 
 
@@ -74,7 +74,6 @@ CREATE TABLE IF NOT EXISTS [events] (
     [date]              TEXT    NOT NULL,
     [time]              TEXT    NOT NULL,
     [club_id]           INTEGER REFERENCES [club]([id]) ON DELETE CASCADE,
-    [tags]              TEXT,              
     [details]           TEXT,             
     [settings]          TEXT,             
     [created_at]        DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -110,7 +109,6 @@ CREATE TABLE IF NOT EXISTS [posts] (
     [status]      TEXT    NOT NULL DEFAULT 'published',
     [user_id]     INTEGER REFERENCES [user]([id]) ON DELETE CASCADE,
     [club_id]     INTEGER REFERENCES [club]([id]) ON DELETE CASCADE,
-    [event_id]    INTEGER REFERENCES [events]([id]) ON DELETE CASCADE,
     [created_at]  DATETIME DEFAULT CURRENT_TIMESTAMP,
     [updated_at]  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -154,11 +152,10 @@ CREATE TABLE IF NOT EXISTS [comments] (
 
 
 CREATE TABLE IF NOT EXISTS [post_reactions] (
-    [id]            INTEGER PRIMARY KEY AUTOINCREMENT,
     [post_id]       INTEGER NOT NULL REFERENCES [posts]([id]) ON DELETE CASCADE,
-    [user_id]       INTEGER NOT NULL REFERENCES [user]([id]) ON DELETE CASCADE,
+    [user_id]       TEXT NOT NULL REFERENCES [user]([student_id]) ON DELETE CASCADE,
     [reaction_type] TEXT    NOT NULL DEFAULT 'like',
-    UNIQUE ([post_id], [user_id])
+    PRIMARY KEY ([post_id], [user_id])
 );
 
 

@@ -37,22 +37,22 @@ def add_or_update_reaction(
         (post_id, current_user.student_id),
     )
     if existing and existing.reaction_type == reaction_in.reaction_type:
-        db.execute("DELETE FROM post_reactions WHERE id = ?", (existing.id,))
+        db.execute("DELETE FROM post_reactions WHERE post_id = ? AND user_id = ?", (post_id, current_user.student_id))
         db.commit()
         raise HTTPException(204, "Reaction removed")
     if existing:
         db.execute(
-            "UPDATE post_reactions SET reaction_type = ? WHERE id = ?",
-            (reaction_in.reaction_type, existing.id),
+            "UPDATE post_reactions SET reaction_type = ? WHERE post_id = ? AND user_id = ?",
+            (reaction_in.reaction_type, post_id, current_user.student_id),
         )
         db.commit()
-        return db.one("SELECT * FROM post_reactions WHERE id = ?", (existing.id,)).__dict__
-    cursor = db.execute(
+        return db.one("SELECT * FROM post_reactions WHERE post_id = ? AND user_id = ?", (post_id, current_user.student_id)).__dict__
+    db.execute(
         "INSERT INTO post_reactions (post_id, user_id, reaction_type) VALUES (?, ?, ?)",
         (post_id, current_user.student_id, reaction_in.reaction_type),
     )
     db.commit()
-    return db.one("SELECT * FROM post_reactions WHERE id = ?", (cursor.lastrowid,)).__dict__
+    return db.one("SELECT * FROM post_reactions WHERE post_id = ? AND user_id = ?", (post_id, current_user.student_id)).__dict__
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)

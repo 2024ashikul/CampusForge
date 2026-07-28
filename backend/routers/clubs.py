@@ -199,10 +199,10 @@ def get_club_members(club_id: int, db=Depends(get_db), current_user=Depends(get_
     ]
 
 
-@router.patch("/{club_id}/members/{member_id}")
+@router.patch("/{club_id}/members/{user_id}")
 def update_club_member(
     club_id: int,
-    member_id: int,
+    user_id: str,
     updates: ClubMemberUpdate,
     db=Depends(get_db),
     current_user=Depends(get_current_user),
@@ -212,7 +212,7 @@ def update_club_member(
         raise HTTPException(404, "Club not found")
     if not check_is_club_admin(club, current_user.student_id, db):
         raise HTTPException(403, "Admin permissions required to modify member roles")
-    member = db.one("SELECT * FROM club_members WHERE id=? AND club_id=?", (member_id, club_id))
+    member = db.one("SELECT * FROM club_members WHERE club_id=? AND user_id=?", (club_id, user_id))
     if not member:
         raise HTTPException(404, "Member record not found")
     removing_admin_access = (
@@ -231,14 +231,14 @@ def update_club_member(
     ]
     if fields:
         db.execute(
-            "UPDATE club_members SET " + ", ".join((f"{k} = ?" for k, _ in fields)) + " WHERE id=?",
-            tuple((v for _, v in fields)) + (member_id,),
+            "UPDATE club_members SET " + ", ".join((f"{k} = ?" for k, _ in fields)) + " WHERE club_id=? AND user_id=?",
+            tuple((v for _, v in fields)) + (club_id, user_id),
         )
         db.commit()
-    member = db.one("SELECT * FROM club_members WHERE id=?", (member_id,))
+    member = db.one("SELECT * FROM club_members WHERE club_id=? AND user_id=?", (club_id, user_id))
     return {
         "detail": "Member updated successfully",
-        "member_id": member.id,
+        "user_id": member.user_id,
         "role": member.role,
         "status": member.status,
     }
