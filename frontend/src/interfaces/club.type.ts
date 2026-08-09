@@ -1,9 +1,9 @@
-// ─── Club JSON blobs ──────────────────────────────────────────────────────────
+
 export interface ClubDetails {
   founded?: string | null;
   lead_name?: string | null;
   base_department?: string | null;
-  category?: string | null;      // 'technical' | 'creative' | 'cultural' | ...
+  category?: string | null;      
   banner_url?: string | null;
   profile_picture_url?: string | null;
 }
@@ -11,13 +11,13 @@ export interface ClubDetails {
 export interface ClubSettings {
   is_recruiting?: boolean;
   join_format?: 'open' | 'interview' | 'portfolio-review';
-  membership_fee?: string;       // 'free' or '$10' etc
+  membership_fee?: string;       
   is_results_public?: boolean;
   is_open?: boolean;
   payment_fee?: number;
 }
 
-// ─── Club response from API ───────────────────────────────────────────────────
+
 export interface BackendClub {
   id: number;
   title: string;

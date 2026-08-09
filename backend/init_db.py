@@ -1,367 +1,299 @@
-import json
-from sqlalchemy import inspect, text
-from database import engine, SessionLocal, Base
-from models import (
-    UserModel, ClubModel, PostModel, PostTagModel, PostMediaModel,
-    EventModel, ClubMemberModel, EventRegistrantModel,
-    CommentModel, PostReactionModel, SkillModel
+
+from database import connection
+
+SCHEMA_STATEMENTS = (
+    """
+    CREATE TABLE IF NOT EXISTS user (
+        student_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        profile_pic TEXT,
+        bio TEXT,
+        socials TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS skills (
+        user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
+        skill TEXT NOT NULL,
+        skill_level TEXT NOT NULL DEFAULT 'Beginner',
+        PRIMARY KEY (user_id, skill)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS club (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        details TEXT,
+        settings TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS club_members (
+        club_id INTEGER NOT NULL REFERENCES club(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
+        role TEXT DEFAULT 'Member',
+        status TEXT DEFAULT 'approved',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (club_id, user_id)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,  
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        event_type TEXT DEFAULT 'workshop',
+        status TEXT DEFAULT 'upcoming',
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        club_id INTEGER REFERENCES club(id) ON DELETE CASCADE,
+        details TEXT,
+        settings TEXT
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS event_registrants (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
+        role TEXT DEFAULT 'Participant',
+        status TEXT DEFAULT 'approved',
+        team_name TEXT,
+        registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (event_id, user_id)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        post_type TEXT NOT NULL DEFAULT 'post',
+        status TEXT NOT NULL DEFAULT 'published',
+        user_id TEXT REFERENCES user(student_id) ON DELETE CASCADE,
+        club_id INTEGER REFERENCES club(id) ON DELETE CASCADE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS post_tags (
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        value TEXT NOT NULL,
+        PRIMARY KEY (post_id, value)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS post_media (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_type TEXT NOT NULL,
+        file_url TEXT NOT NULL,
+        display_order INTEGER NOT NULL DEFAULT 0,
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
+        parent_id INTEGER,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS post_reactions (
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES user(student_id) ON DELETE CASCADE,
+        reaction_type TEXT NOT NULL DEFAULT 'like',
+        PRIMARY KEY (post_id, user_id)
+    )
+    """,
 )
-from auth import get_password_hash
 
 
-def init_db():
-    print("[Init DB] Creating tables...")
-    Base.metadata.create_all(bind=engine)
-    # Migrate the pre-v3.1 JSON user.skills column when it is present.  The
-    # column is deliberately no longer mapped; skills now live in their own
-    # one-to-many table.
-    user_columns = {column["name"] for column in inspect(engine).get_columns("user")}
-    if "skills" in user_columns:
-        with engine.begin() as connection:
-            legacy_users = connection.execute(text('SELECT student_id, skills FROM "user" WHERE skills IS NOT NULL')).mappings()
-            for legacy_user in legacy_users:
-                try:
-                    legacy_skills = json.loads(legacy_user["skills"])
-                except (TypeError, json.JSONDecodeError):
-                    legacy_skills = []
-                for skill in legacy_skills if isinstance(legacy_skills, list) else []:
-                    name = str(skill.get("name", "")).strip() if isinstance(skill, dict) else ""
-                    level = str(skill.get("level", "Beginner")) if isinstance(skill, dict) else "Beginner"
-                    if name:
-                        connection.execute(text(
-                            "INSERT INTO skills (user_id, skill, skill_level) "
-                            "SELECT :user_id, :skill, :skill_level "
-                            "WHERE NOT EXISTS (SELECT 1 FROM skills WHERE user_id = :user_id AND skill = :skill)"
-                        ), {"user_id": legacy_user["student_id"], "skill": name, "skill_level": level})
-    # Lightweight development migration for existing SQLite databases.
-    columns = {column["name"] for column in inspect(engine).get_columns("posts")}
-    if "event_id" not in columns:
-        with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE posts ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE CASCADE"))
+def init_db() -> None:
+    """Create each table if it does not already exist."""
+    with connection() as db:
+        statements = MYSQL_SCHEMA_STATEMENTS if db.mysql else SCHEMA_STATEMENTS
+        for statement in statements:
+            db.execute(statement)
+        _migrate_club_members_primary_key(db)
+        _migrate_post_reactions_primary_key(db)
 
-    db = SessionLocal()
-    try:
-        if db.query(UserModel).first():
-            print("[Init DB] Database already contains data.")
-            return
+    print("[Init DB] Raw SQL schema is ready.")
 
-        print("[Init DB] Seeding initial sample data...")
 
-        # ---------------------------------------------------------------
-        # Users  (student_id format: YYPPNNN — 26=batch, 04=CSE, 07=Arch, 02=Mech)
-        # Department is derived from student_id (04->CSE, 07->Arch, 02->Mech)
-        # ---------------------------------------------------------------
-        u1 = UserModel(
-            student_id="2604001",
-            name="Alex Rivera",
-            email="alex.rivera@campusforge.edu",
-            password=get_password_hash("password123"),
-            profile_pic="👨‍💻",
-            bio="Systems engineering enthusiast and platform developer.",
-            socials=json.dumps({
-                "github": "https://github.com/alexrivera",
-                "linkedin": "https://linkedin.com/in/alexrivera",
-            }),
+def _migrate_club_members_primary_key(db) -> None:
+    """Replace the legacy surrogate member ID without discarding member rows.
+
+    SQLite cannot drop a primary-key column in place, so its table is rebuilt
+    transactionally from its existing columns. MySQL can make the equivalent
+    change in place. Both paths are safe to run repeatedly.
+    """
+    if db.mysql:
+        columns = {row.Field for row in db.all("SHOW COLUMNS FROM club_members")}
+        if "id" in columns:
+            db.execute("ALTER TABLE club_members DROP PRIMARY KEY, DROP COLUMN id, ADD PRIMARY KEY (club_id, user_id)")
+        return
+
+    columns = db.all("PRAGMA table_info(club_members)")
+    if not any(column.name == "id" for column in columns):
+        return
+
+    # Keep every existing non-ID column, including fields added by deployments.
+    column_definitions = []
+    for column in columns:
+        if column.name == "id":
+            continue
+        definition = f'"{column.name}" {column.type or "TEXT"}'
+        if column.notnull:
+            definition += " NOT NULL"
+        if column.dflt_value is not None:
+            definition += f" DEFAULT {column.dflt_value}"
+        column_definitions.append(definition)
+
+    foreign_keys = db.all("PRAGMA foreign_key_list(club_members)")
+    for foreign_key in foreign_keys:
+        clause = (
+            f'FOREIGN KEY ("{foreign_key.__dict__["from"]}") '
+            f'REFERENCES "{foreign_key.table}" ("{foreign_key.to}")'
         )
-        u2 = UserModel(
-            student_id="2607001",
-            name="Sarah Chen",
-            email="sarah.chen@campusforge.edu",
-            password=get_password_hash("password123"),
-            profile_pic="👩‍💻",
-            bio="UI/UX design architect and web developer.",
-            socials=json.dumps({
-                "github": "https://github.com/sarahchen",
-                "twitter": "https://twitter.com/sarahchen",
-                "website": "https://sarahchen.design",
-            }),
+        if foreign_key.on_delete and foreign_key.on_delete != "NO ACTION":
+            clause += f" ON DELETE {foreign_key.on_delete}"
+        if foreign_key.on_update and foreign_key.on_update != "NO ACTION":
+            clause += f" ON UPDATE {foreign_key.on_update}"
+        column_definitions.append(clause)
+    column_definitions.append("PRIMARY KEY (club_id, user_id)")
+
+    retained_names = [column.name for column in columns if column.name != "id"]
+    quoted_names = ", ".join(f'"{name}"' for name in retained_names)
+    db.execute("PRAGMA foreign_keys = OFF")
+    db.execute(f"CREATE TABLE club_members_new ({', '.join(column_definitions)})")
+    db.execute(f"INSERT INTO club_members_new ({quoted_names}) SELECT {quoted_names} FROM club_members")
+    db.execute("DROP TABLE club_members")
+    db.execute("ALTER TABLE club_members_new RENAME TO club_members")
+    db.execute("PRAGMA foreign_keys = ON")
+
+
+def _migrate_post_reactions_primary_key(db) -> None:
+    """Replace the legacy reaction ID while retaining every reaction row."""
+    if db.mysql:
+        columns = {row.Field for row in db.all("SHOW COLUMNS FROM post_reactions")}
+        if "id" in columns:
+            db.execute("ALTER TABLE post_reactions DROP PRIMARY KEY, DROP COLUMN id, ADD PRIMARY KEY (post_id, user_id)")
+        return
+
+    columns = db.all("PRAGMA table_info(post_reactions)")
+    if not any(column.name == "id" for column in columns):
+        return
+
+    column_definitions = []
+    for column in columns:
+        if column.name == "id":
+            continue
+        definition = f'"{column.name}" {column.type or "TEXT"}'
+        if column.notnull:
+            definition += " NOT NULL"
+        if column.dflt_value is not None:
+            definition += f" DEFAULT {column.dflt_value}"
+        column_definitions.append(definition)
+
+    foreign_keys = db.all("PRAGMA foreign_key_list(post_reactions)")
+    for foreign_key in foreign_keys:
+        clause = (
+            f'FOREIGN KEY ("{foreign_key.__dict__["from"]}") '
+            f'REFERENCES "{foreign_key.table}" ("{foreign_key.to}")'
         )
-        u3 = UserModel(
-            student_id="2602001",
-            name="Marcus Vance",
-            email="marcus.vance@campusforge.edu",
-            password=get_password_hash("password123"),
-            profile_pic="⚙️",
-            bio="Robotics and embedded systems engineer.",
-            socials=json.dumps({
-                "github": "https://github.com/marcusvance",
-                "linkedin": "https://linkedin.com/in/marcusvance",
-            }),
-        )
-        db.add_all([u1, u2, u3])
-        db.commit()
-        db.refresh(u1)
-        db.refresh(u2)
-        db.refresh(u3)
-        db.add_all([
-            SkillModel(user_id=u1.student_id, skill="Python", skill_level="Advanced"),
-            SkillModel(user_id=u1.student_id, skill="React", skill_level="Intermediate"),
-            SkillModel(user_id=u1.student_id, skill="C++", skill_level="Beginner"),
-            SkillModel(user_id=u1.student_id, skill="RTOS", skill_level="Advanced"),
-            SkillModel(user_id=u2.student_id, skill="UI/UX Design", skill_level="Advanced"),
-            SkillModel(user_id=u2.student_id, skill="Figma", skill_level="Advanced"),
-            SkillModel(user_id=u2.student_id, skill="TypeScript", skill_level="Intermediate"),
-            SkillModel(user_id=u2.student_id, skill="Tailwind CSS", skill_level="Advanced"),
-            SkillModel(user_id=u3.student_id, skill="C++", skill_level="Advanced"),
-            SkillModel(user_id=u3.student_id, skill="ROS", skill_level="Advanced"),
-            SkillModel(user_id=u3.student_id, skill="SolidWorks", skill_level="Intermediate"),
-        ])
-        db.commit()
+        if foreign_key.on_delete and foreign_key.on_delete != "NO ACTION":
+            clause += f" ON DELETE {foreign_key.on_delete}"
+        if foreign_key.on_update and foreign_key.on_update != "NO ACTION":
+            clause += f" ON UPDATE {foreign_key.on_update}"
+        column_definitions.append(clause)
+    column_definitions.append("PRIMARY KEY (post_id, user_id)")
 
-        # ---------------------------------------------------------------
-        # Clubs  (details + settings JSON)
-        # ---------------------------------------------------------------
-        c1 = ClubModel(
-            title="Google Developer Student Club",
-            description="The premier technical collective for scaling software products, exploring AI tooling, and building community ecosystems.",
-            details=json.dumps({
-                "founded": "2021",
-                "lead_name": "Alex Rivera",
-                "base_department": "Computer Science & Engineering",
-                "category": "technical",
-                "banner_url": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80",
-            }),
-            settings=json.dumps({
-                "is_recruiting": True,
-                "join_format": "interview",
-                "membership_fee": "free",
-                "is_results_public": True,
-                "is_open": True,
-                "payment_fee": 0,
-            }),
-        )
-        c2 = ClubModel(
-            title="Pixel Perfect Design Club",
-            description="Crafting pixel-perfect interface components, establishing unified design tokens, and hosting multi-campus Figma hackathons.",
-            details=json.dumps({
-                "founded": "2022",
-                "lead_name": "Sarah Chen",
-                "base_department": "Architecture",
-                "category": "creative",
-                "banner_url": "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80",
-            }),
-            settings=json.dumps({
-                "is_recruiting": True,
-                "join_format": "portfolio-review",
-                "membership_fee": "$10",
-                "is_results_public": True,
-                "is_open": True,
-                "payment_fee": 10,
-            }),
-        )
-        c3 = ClubModel(
-            title="Robotics & Automation Society",
-            description="Designing high-performance mechanical systems, firmware control loops, and autonomous EV prototypes.",
-            details=json.dumps({
-                "founded": "2019",
-                "lead_name": "Marcus Vance",
-                "base_department": "Mechanical Engineering",
-                "category": "technical",
-                "banner_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80",
-            }),
-            settings=json.dumps({
-                "is_recruiting": False,
-                "join_format": "interview",
-                "membership_fee": "free",
-                "is_results_public": False,
-                "is_open": True,
-                "payment_fee": 0,
-            }),
-        )
-        db.add_all([c1, c2, c3])
-        db.commit()
-        db.refresh(c1)
-        db.refresh(c2)
-        db.refresh(c3)
-
-        # ---------------------------------------------------------------
-        # Club Memberships (user_id is student_id string)
-        # ---------------------------------------------------------------
-        db.add_all([
-            ClubMemberModel(club_id=c1.id, user_id=u1.student_id, role="Admin", status="approved"),
-            ClubMemberModel(club_id=c2.id, user_id=u2.student_id, role="Admin", status="approved"),
-            ClubMemberModel(club_id=c3.id, user_id=u3.student_id, role="Admin", status="approved"),
-            ClubMemberModel(club_id=c1.id, user_id=u2.student_id, role="Member", status="approved"),
-        ])
-        db.commit()
-
-        # ---------------------------------------------------------------
-        # Events  (details + settings JSON, start_time/end_time ISO strings)
-        # ---------------------------------------------------------------
-        e1 = EventModel(
-            title="ByteCraft Hackathon 2026",
-            short_description="The ultimate campus-wide 36-hour hackathon targeting web3 and sustainability paradigms.",
-            event_type="competition",
-            status="upcoming",
-            start_time="2026-05-28T09:00",
-            end_time="2026-05-29T21:00",
-            club_id=c1.id,
-            tags=json.dumps(["Next.js", "Hackathon", "Web3", "AI"]),
-            details=json.dumps({
-                "location": "Main Auditorium & Discord",
-                "banner_url": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80",
-                "virtual_link": "https://discord.gg/campusforge-bytecraft",
-                "description_markdown": "### Welcome to ByteCraft 2026\n\nBuild innovative solutions using cutting-edge APIs.",
-            }),
-            settings=json.dumps({
-                "participation_type": "team",
-                "entrance_fee": "free",
-                "is_attendees_public": True,
-                "is_results_public": False,
-            }),
-        )
-        e2 = EventModel(
-            title="UI/UX Design Systems Mastery",
-            short_description="Construct complex, highly scalable atomic design components and interactive tokens in Figma.",
-            event_type="workshop",
-            status="upcoming",
-            start_time="2026-06-05T14:30",
-            end_time="2026-06-05T17:30",
-            club_id=c2.id,
-            tags=json.dumps(["Design", "Figma", "UI/UX"]),
-            details=json.dumps({
-                "location": "Design Lab 3",
-                "banner_url": "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80",
-                "virtual_link": None,
-                "description_markdown": "### Advanced Component Architecture Workshop\n\nHands-on token mapping and Figma auto-layout exercises.",
-            }),
-            settings=json.dumps({
-                "participation_type": "individual",
-                "entrance_fee": "$15",
-                "is_attendees_public": True,
-                "is_results_public": False,
-            }),
-        )
-        e3 = EventModel(
-            title="Embedded RTOS & Microkernel Architecture",
-            short_description="Hands-on flashing of deterministic tasks onto real-time sensor array kits.",
-            event_type="workshop",
-            status="upcoming",
-            start_time="2026-06-12T10:00",
-            end_time="2026-06-12T13:00",
-            club_id=c3.id,
-            tags=json.dumps(["Hardware", "C++", "RTOS"]),
-            details=json.dumps({
-                "location": "Lab 4, Engineering Core",
-                "banner_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80",
-                "virtual_link": None,
-                "description_markdown": "Flashing real-time microkernel OS on hardware boards.",
-            }),
-            settings=json.dumps({
-                "participation_type": "individual",
-                "entrance_fee": "free",
-                "is_attendees_public": True,
-                "is_results_public": False,
-            }),
-        )
-        db.add_all([e1, e2, e3])
-        db.commit()
-        db.refresh(e1)
-        db.refresh(e2)
-        db.refresh(e3)
-
-        # Event registrants (user_id is student_id string)
-        db.add_all([
-            EventRegistrantModel(event_id=e1.id, user_id=u1.student_id, role="Admin", status="approved"),
-            EventRegistrantModel(event_id=e2.id, user_id=u2.student_id, role="Admin", status="approved"),
-            EventRegistrantModel(event_id=e3.id, user_id=u3.student_id, role="Admin", status="approved"),
-            # Sample participant
-            EventRegistrantModel(event_id=e1.id, user_id=u2.student_id, team_name="PixelCraft Team", role="Participant", status="approved"),
-        ])
-        db.commit()
-
-        # ---------------------------------------------------------------
-        # Posts  (with post_tags + post_media, user_id is student_id string)
-        # ---------------------------------------------------------------
-        p1 = PostModel(
-            title="Autonomous Solar Rover Ecosystem",
-            description="An automated navigation and battery-monitoring array utilizing lightweight RTOS microkernels.",
-            post_type="project",
-            status="published",
-            club_id=c3.id,
-        )
-        p2 = PostModel(
-            title="ByteCraft Hackathon — Registration Now Open!",
-            description="Register your team for the biggest hackathon of the year. Limited spots available!",
-            post_type="announcement",
-            status="published",
-            club_id=c1.id,
-        )
-        p3 = PostModel(
-            title="My Journey Learning Figma in 30 Days",
-            description="Here's what I learned about auto-layout, component variants, and design tokens over 30 days of daily practice.",
-            post_type="post",
-            status="published",
-            user_id=u2.student_id,
-        )
-        p4 = PostModel(
-            title="Draft: New Project Proposal",
-            description="Working on a drone delivery prototype — still in draft stage.",
-            post_type="project",
-            status="draft",
-            user_id=u1.student_id,
-        )
-        db.add_all([p1, p2, p3, p4])
-        db.commit()
-        db.refresh(p1)
-        db.refresh(p2)
-        db.refresh(p3)
-        db.refresh(p4)
-
-        # Tags
-        db.add_all([
-            PostTagModel(post_id=p1.id, value="Hardware"),
-            PostTagModel(post_id=p1.id, value="C++"),
-            PostTagModel(post_id=p1.id, value="RTOS"),
-            PostTagModel(post_id=p2.id, value="Hackathon"),
-            PostTagModel(post_id=p2.id, value="AI"),
-            PostTagModel(post_id=p3.id, value="Design"),
-            PostTagModel(post_id=p3.id, value="Figma"),
-            PostTagModel(post_id=p4.id, value="Hardware"),
-            PostTagModel(post_id=p4.id, value="Drone"),
-        ])
-
-        # Media
-        db.add_all([
-            PostMediaModel(post_id=p1.id, media_type="photo", file_url="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80", display_order=0),
-            PostMediaModel(post_id=p2.id, media_type="photo", file_url="https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=800&q=80", display_order=0),
-            PostMediaModel(post_id=p3.id, media_type="photo", file_url="https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80", display_order=0),
-        ])
-        db.commit()
-        db.refresh(p1)
-        db.refresh(p2)
-        db.refresh(p3)
-
-        # ---------------------------------------------------------------
-        # Comments & Reactions
-        # ---------------------------------------------------------------
-        c_root1 = CommentModel(post_id=p1.id, user_id=u2.student_id, content="This is amazing work! How did you handle the power management?")
-        c_root2 = CommentModel(post_id=p3.id, user_id=u1.student_id, content="Great writeup Sarah! Auto-layout changed my workflow completely.")
-        db.add_all([c_root1, c_root2])
-        db.commit()
-        db.refresh(c_root1)
-
-        # Reply to root comment
-        db.add(CommentModel(post_id=p1.id, user_id=u1.student_id, parent_id=c_root1.id, content="We used a custom PWM controller with a solar charge IC — happy to share the circuit diagram!"))
-        db.commit()
-
-        # Reactions
-        db.add_all([
-            PostReactionModel(post_id=p1.id, user_id=u2.student_id, reaction_type="fire"),
-            PostReactionModel(post_id=p1.id, user_id=u3.student_id, reaction_type="clap"),
-            PostReactionModel(post_id=p3.id, user_id=u1.student_id, reaction_type="heart"),
-            PostReactionModel(post_id=p2.id, user_id=u3.student_id, reaction_type="like"),
-        ])
-        db.commit()
-
-        print("[Init DB] Seed data inserted successfully.")
-    except Exception as e:
-        db.rollback()
-        print(f"[Init DB Error] Failed to seed database: {e}")
-        raise
-    finally:
-        db.close()
+    retained_names = [column.name for column in columns if column.name != "id"]
+    quoted_names = ", ".join(f'"{name}"' for name in retained_names)
+    db.execute("PRAGMA foreign_keys = OFF")
+    db.execute(f"CREATE TABLE post_reactions_new ({', '.join(column_definitions)})")
+    db.execute(f"INSERT INTO post_reactions_new ({quoted_names}) SELECT {quoted_names} FROM post_reactions")
+    db.execute("DROP TABLE post_reactions")
+    db.execute("ALTER TABLE post_reactions_new RENAME TO post_reactions")
+    db.execute("PRAGMA foreign_keys = ON")
 
 
-if __name__ == "__main__":
-    init_db()
+MYSQL_SCHEMA_STATEMENTS = (
+    """CREATE TABLE IF NOT EXISTS user (
+        student_id VARCHAR(20) PRIMARY KEY, name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL,
+        profile_pic TEXT NULL, bio TEXT NULL, socials JSON NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS skills (
+        user_id VARCHAR(20) NOT NULL, skill VARCHAR(100) NOT NULL,
+        skill_level VARCHAR(20) NOT NULL DEFAULT 'Beginner',
+        PRIMARY KEY (user_id, skill), FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS club (
+        id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL, details JSON NULL, settings JSON NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS club_members (
+        club_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        role VARCHAR(40) NOT NULL DEFAULT 'Member', status VARCHAR(20) NOT NULL DEFAULT 'approved',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (club_id, user_id),
+        FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS events (
+        id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT NOT NULL,
+        event_type VARCHAR(50) NOT NULL DEFAULT 'workshop', status VARCHAR(30) NOT NULL DEFAULT 'upcoming',
+        start_time VARCHAR(64) NOT NULL, end_time VARCHAR(64) NULL, club_id INT NULL,
+        details JSON NULL, settings JSON NULL,
+        FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS event_registrants (
+        id INT AUTO_INCREMENT PRIMARY KEY, event_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        role VARCHAR(40) NOT NULL DEFAULT 'Participant', status VARCHAR(20) NOT NULL DEFAULT 'approved',
+        team_name VARCHAR(255) NULL, registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY event_user_unique (event_id, user_id),
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS posts (
+        id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT NOT NULL,
+        post_type VARCHAR(50) NOT NULL DEFAULT 'post', status VARCHAR(30) NOT NULL DEFAULT 'published',
+        user_id VARCHAR(20) NULL, club_id INT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE,
+        FOREIGN KEY (club_id) REFERENCES club(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS post_tags (
+        post_id INT NOT NULL, value VARCHAR(100) NOT NULL, PRIMARY KEY (post_id, value),
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS post_media (
+        id INT AUTO_INCREMENT PRIMARY KEY, media_type VARCHAR(20) NOT NULL, file_url TEXT NOT NULL,
+        display_order INT NOT NULL DEFAULT 0, post_id INT NOT NULL,
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS comments (
+        id INT AUTO_INCREMENT PRIMARY KEY, post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        parent_id INT NULL, content TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+    """CREATE TABLE IF NOT EXISTS post_reactions (
+        post_id INT NOT NULL, user_id VARCHAR(20) NOT NULL,
+        reaction_type VARCHAR(20) NOT NULL DEFAULT 'like', PRIMARY KEY (post_id, user_id),
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(student_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB""",
+)

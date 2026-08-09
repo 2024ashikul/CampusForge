@@ -10,22 +10,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Read saved preference from localStorage, default to dark if empty
+  
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem('campusforge-theme') as Theme) || 'dark';
   });
 
-  // FIXED: Consolidated into a single, clean observer hook
+  
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // 1. This updates your global Tailwind v4 CSS variables
+    
     root.setAttribute('data-theme', theme);
     
-    // 2. This tells the UIW Markdown editor to switch its colors automatically
+    
     root.setAttribute('data-color-mode', theme);
     
-    // 3. Save the selection to the browser's memory
+    
     localStorage.setItem('campusforge-theme', theme);
   }, [theme]);
 

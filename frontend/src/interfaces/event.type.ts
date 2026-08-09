@@ -1,31 +1,31 @@
-// ─── Event JSON blobs ─────────────────────────────────────────────────────────
+
 export interface EventDetails {
   location?: string | null;
   banner_url?: string | null;
   profile_picture_url?: string | null;
   virtual_link?: string | null;
   description_markdown?: string | null;
+  results?: string | null;
+  tags?: string[] | null;
 }
 
 export interface EventSettings {
   participation_type?: 'individual' | 'team';
-  entrance_fee?: string;          // 'free' or '$15' etc
+  entrance_fee?: string;          
   is_attendees_public?: boolean;
   is_results_public?: boolean;
 }
 
-// ─── Event response from API ──────────────────────────────────────────────────
+
 export interface BackendEvent {
   id: number;
   title: string;
-  short_description: string;
-  event_type: string;             // 'workshop' | 'competition' | 'guest-speaker' | 'seminar'
-  status: string;                 // 'upcoming' | 'ongoing' | 'completed'
-  start_time: string;             // ISO datetime string e.g. "2026-08-15T18:00"
-  end_time?: string | null;       // ISO datetime string e.g. "2026-08-15T21:00"
+  description: string;
+  event_type: string;             
+  status: string;                 
+  start_time: string;             
+  end_time?: string | null;       
   club_id?: number | null;
-  tags?: string[] | null;
-  results?: string | null;
   details?: EventDetails | null;
   settings?: EventSettings | null;
   club_title?: string;
@@ -36,7 +36,7 @@ export interface BackendEvent {
   registrant_status?: string | null;
 }
 
-// ─── Helper to format start_time / end_time for display ──────────────────────
+
 export function formatEventDateTime(isoString: string): { date: string; time: string } {
   try {
     const d = new Date(isoString);
@@ -49,7 +49,7 @@ export function formatEventDateTime(isoString: string): { date: string; time: st
   }
 }
 
-// ─── Legacy-compat interface (used by Event.tsx / Events.tsx pages) ───────────
+
 export interface Announcement {
   id: string;
   date: string;
@@ -80,8 +80,8 @@ export interface EventData {
   clubName: string;
   tagline?: string;
   tags?: string[];
-  startTime: string;              // ISO datetime
-  endTime?: string | null;        // ISO datetime
+  startTime: string;              
+  endTime?: string | null;        
   location: string;
   virtualLink?: string | null;
   spotsLeft: number;

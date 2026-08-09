@@ -149,7 +149,7 @@ export default function CampusForgeClubsPage() {
     <div className="page-container">
       <Toast message={notification} />
 
-      {/* Header */}
+      {}
       <header className="page-header flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -168,7 +168,7 @@ export default function CampusForgeClubsPage() {
         </div>
       </header>
 
-      {/* Search & Category Filter Bar */}
+      {}
       <section className="filter-panel space-y-3 mb-6">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
@@ -215,7 +215,7 @@ export default function CampusForgeClubsPage() {
         </div>
       )}
 
-      {/* Grid */}
+      {}
       <main>
         {isLoading ? (
           <div className="empty-state py-12 text-center">
@@ -236,7 +236,7 @@ export default function CampusForgeClubsPage() {
                 className="entity-card flex flex-col justify-between rounded-xl border border-customBorder bg-secondary/30 hover:border-accent/30 transition-all overflow-hidden cursor-pointer"
               >
                 <div>
-                  {/* Banner Image with Overlay Club Title */}
+                  {}
                   <div className="relative h-28 w-full bg-slate-800">
                     <img
                       src={club.bannerUrl || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=800&q=80'}
@@ -258,7 +258,7 @@ export default function CampusForgeClubsPage() {
                     </div>
                   </div>
 
-                  {/* Body Content */}
+                  {}
                   <div className="p-4">
                     <p className="text-xs text-subText line-clamp-2 leading-relaxed mb-3">
                       {club.briefIntro}
@@ -266,7 +266,7 @@ export default function CampusForgeClubsPage() {
                   </div>
                 </div>
 
-                {/* Footer Section */}
+                {}
                 <div className="px-4 pb-4">
                   <div className="grid grid-cols-2 gap-2 pt-3 border-t border-customBorder text-xs mb-3">
                     <div>
@@ -283,7 +283,7 @@ export default function CampusForgeClubsPage() {
                     </div>
                   </div>
 
-                  {/* Compact Actions */}
+                  {}
                   <div className="flex items-center justify-between gap-2 pt-1">
                     {club.isJoined ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">

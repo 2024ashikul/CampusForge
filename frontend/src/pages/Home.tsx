@@ -18,10 +18,9 @@ import {
   X,
 } from 'lucide-react';
 
-import type { PostAttachment, PostData } from '../interfaces/post.type';
+import type { PostData } from '../interfaces/post.type';
 import type { BackendClub, BackendEvent, BackendUser } from '../services/api';
 import {
-  createPostApi,
   getClubsApi,
   getEventsApi,
   getPostsApi,
@@ -66,6 +65,7 @@ export const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [focusedPostId, setFocusedPostId] = useState<number | null>(null);
   const [activeFeedTab, setActiveFeedTab] = useState<FeedTab>('ALL');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
@@ -88,20 +88,7 @@ export const Home: React.FC = () => {
 
   useEffect(() => { loadDashboard(); }, []);
 
-  const handlePublish = async (
-    title: string,
-    markdown: string,
-    _association: 'STUDENT' | 'CLUB',
-    attachments: Omit<PostAttachment, 'id' | 'postId'>[],
-    tags: string[],
-  ) => {
-    await createPostApi({
-      title,
-      description: markdown,
-      post_type: activeFeedTab === 'PROJECT' ? 'project' : 'general',
-      tags,
-      media: attachments,
-    });
+  const handlePostSaved = async () => {
     setIsPostModalOpen(false);
     await loadDashboard();
   };
@@ -137,7 +124,7 @@ export const Home: React.FC = () => {
       ...clubs.filter((club) => matches([club.title, club.description, club.details?.category, club.details?.base_department])).map((club) => ({
         id: `club-${club.id}`, kind: 'club' as const, title: club.title, detail: `${club.member_count} members`, href: `/club/${club.id}`,
       })),
-      ...events.filter((event) => matches([event.title, event.short_description, event.club_title, event.details?.location, ...(event.tags || [])])).map((event) => ({
+      ...events.filter((event) => matches([event.title, event.description, event.club_title, event.details?.location, ...(event.details?.tags || [])])).map((event) => ({
         id: `event-${event.id}`, kind: 'event' as const, title: event.title, detail: event.club_title || event.event_type, href: `/event/${event.id}`,
       })),
     ].slice(0, 8);
@@ -150,8 +137,14 @@ export const Home: React.FC = () => {
   const suggestedClubs = useMemo(() => [...clubs].sort((a, b) => b.member_count - a.member_count).slice(0, 3), [clubs]);
   const peopleToMeet = useMemo(() => users.filter((person) => person.student_id !== user?.student_id).slice(0, 4), [users, user?.student_id]);
   const selectSearchResult = (result: SearchResult) => {
-    if (result.href === '#feed') document.getElementById('feed')?.scrollIntoView({ behavior: 'smooth' });
-    else navigate(result.href);
+    if (result.kind === 'post') {
+      const postId = Number(result.id.replace('post-', ''));
+      setFocusedPostId(postId);
+      setGlobalSearch('');
+      requestAnimationFrame(() => document.getElementById(`post-${postId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return;
+    }
+    navigate(result.href);
     setGlobalSearch('');
   };
 
@@ -211,7 +204,7 @@ export const Home: React.FC = () => {
             </div>
             <div className="space-y-4">
               {isLoading ? <div className="rounded-2xl border border-customBorder bg-card py-16 flex flex-col items-center gap-3"><Loader2 className="text-accent animate-spin" size={27} /><span className="text-xs text-subText">Loading your campus feed…</span></div>
-                : processedFeed.length ? processedFeed.map((post) => <PostCard key={post.id} postData={post} />)
+                : processedFeed.length ? processedFeed.map((post) => <PostCard key={post.id} postData={post} isFocused={focusedPostId === post.rawId} onUpdated={(updated) => setFeedPosts((current) => current.map((item) => item.rawId === updated.rawId ? updated : item))} />)
                   : <div className="rounded-2xl border border-customBorder bg-card py-16 text-center"><Compass className="text-subText/30 mx-auto mb-3" size={32} /><p className="text-sm text-subText">{globalSearch ? 'No feed posts match your search.' : 'Your feed is ready for the first update.'}</p><button onClick={() => setIsPostModalOpen(true)} className="btn-ghost mt-3 text-accent">Create a post <ArrowRight size={14} /></button></div>}
             </div>
           </section>
@@ -237,7 +230,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      {isPostModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsPostModalOpen(false)} /><div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-customBorder bg-card shadow-2xl p-6"><PostForm modalTitle="Create New Campus Post" onClose={() => setIsPostModalOpen(false)} onPublish={handlePublish} /></div></div>}
+      {isPostModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsPostModalOpen(false)} /><div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-customBorder bg-card shadow-2xl p-6"><PostForm modalTitle={activeFeedTab === 'PROJECT' ? 'Publish Project Showcase' : 'Create New Campus Post'} postType={activeFeedTab === 'PROJECT' ? 'project' : 'post'} onClose={() => setIsPostModalOpen(false)} onSaved={handlePostSaved} /></div></div>}
     </main>
   );
 };

@@ -18,6 +18,7 @@ import {
   Building2,
   UserCheck,
   Tag
+  ,Trash2
 } from 'lucide-react';
 import Tabs, { type TabOption } from '../components/Tabs';
 import TopPortion from '../components/TopPortion';
@@ -34,6 +35,7 @@ import {
   createPostApi,
   createEventApi,
   joinClubApi,
+  deleteClubApi,
   uploadFileApi,
   mapBackendPostToPostData,
   type BackendClub,
@@ -44,7 +46,6 @@ import {
 type TabKey = 'public' | 'announcements' | 'events' | 'members' | 'settings';
 
 interface ClubMember {
-  id: number;
   user_id: string;
   student_id: string;
   name: string;
@@ -87,12 +88,12 @@ export const Club: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('public');
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Modal States
+  
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isCreateAnnouncementOpen, setIsCreateAnnouncementOpen] = useState(false);
 
-  // New Event Form State
+  
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDesc, setNewEventDesc] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
@@ -102,12 +103,12 @@ export const Club: React.FC = () => {
   const [newEventImage, setNewEventImage] = useState('');
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
 
-  // New Announcement Form State
+  
   const [newAnnounceTitle, setNewAnnounceTitle] = useState('');
   const [newAnnounceDesc, setNewAnnounceDesc] = useState('');
   const [isSubmittingAnnounce, setIsSubmittingAnnounce] = useState(false);
 
-  // Settings Tab Form State
+  
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCategory, setEditCategory] = useState('technical');
@@ -127,6 +128,8 @@ export const Club: React.FC = () => {
   const userRole = club?.user_role || (club?.is_joined ? 'ENROLLED' : 'EXTERNAL');
   const isAdmin = userRole === 'ADMIN';
   const isEnrolled = userRole === 'ENROLLED' || isAdmin;
+  const isAdminRole = (role: string) => ['admin', 'lead', 'leader', 'president', 'director'].includes(role.toLowerCase());
+  const approvedAdminCount = members.filter((member) => member.status === 'approved' && isAdminRole(member.role)).length;
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -197,7 +200,7 @@ export const Club: React.FC = () => {
     tabOptions.push({ key: 'settings', label: '⚙️ Settings & Banner' });
   }
 
-  // Handlers
+  
   const handleJoin = async () => {
     try {
       const res = await joinClubApi(numericId);
@@ -206,6 +209,14 @@ export const Club: React.FC = () => {
     } catch (e: any) {
       showNotification(e.message || 'Failed to join club');
     }
+  };
+
+  const handleDeleteClub = async () => {
+    if (!window.confirm(`Delete “${club?.title || 'this club'}”? This cannot be undone.`)) return;
+    try {
+      await deleteClubApi(numericId);
+      navigate('/clubs');
+    } catch (err: any) { showNotification(err.message || 'Failed to delete club'); }
   };
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
@@ -240,11 +251,15 @@ export const Club: React.FC = () => {
     }
   };
 
-  const handlePromoteToAdmin = async (memberId: number, currentRole: string) => {
+  const handlePromoteToAdmin = async (userId: string, currentRole: string) => {
     if (!isAdmin) return;
-    const newRole = currentRole === 'Admin' ? 'Member' : 'Admin';
+    if (isAdminRole(currentRole) && approvedAdminCount <= 1) {
+      showNotification('Assign another admin before demoting the only admin.');
+      return;
+    }
+    const newRole = isAdminRole(currentRole) ? 'Member' : 'Admin';
     try {
-      await updateClubMemberApi(numericId, memberId, { role: newRole });
+      await updateClubMemberApi(numericId, userId, { role: newRole });
       showNotification(`Updated role to ${newRole}`);
       const updatedMembers = await getClubMembersApi(numericId);
       setMembers(updatedMembers);
@@ -253,10 +268,10 @@ export const Club: React.FC = () => {
     }
   };
 
-  const handleApproveMember = async (memberId: number) => {
+  const handleApproveMember = async (userId: string) => {
     if (!isAdmin) return;
     try {
-      await updateClubMemberApi(numericId, memberId, { status: 'approved' });
+      await updateClubMemberApi(numericId, userId, { status: 'approved' });
       showNotification('Member approved successfully!');
       const updatedMembers = await getClubMembersApi(numericId);
       setMembers(updatedMembers);
@@ -272,7 +287,7 @@ export const Club: React.FC = () => {
     try {
       await createEventApi({
         title: newEventTitle,
-        short_description: newEventDesc,
+        description: newEventDesc,
         event_type: 'workshop',
         status: 'upcoming',
         start_time: newEventDate && newEventTime ? `${newEventDate}T${newEventTime}` : new Date().toISOString().slice(0, 16),
@@ -340,14 +355,14 @@ export const Club: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary text-mainText font-sans pb-16">
       
-      {/* Notification Toast */}
+      {}
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-accent text-white px-5 py-3 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2">
           <Sparkles className="w-4 h-4" /> {notification}
         </div>
       )}
 
-      {/* Facebook-style Cover & Header */}
+      {}
       <TopPortion
         bannerUrl={club?.details?.banner_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"}
         logoUrl={club?.details?.profile_picture_url || "🏛️"}
@@ -366,7 +381,7 @@ export const Club: React.FC = () => {
 
       <div className="max-w-[1180px] mx-auto px-4 sm:px-5">
 
-        {/* Navigation Bar & Actions */}
+        {}
         <div className="glass-panel mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3">
           <Tabs options={tabOptions} activeTab={activeTab} onChange={(k) => setActiveTab(k)} />
           {isAdmin && (
@@ -377,16 +392,19 @@ export const Club: React.FC = () => {
               >
                 <Plus className="w-4 h-4" /> + Create Event
               </button>
+              <button onClick={handleDeleteClub} className="px-3.5 py-2 border border-rose-500/40 text-rose-400 font-bold rounded-xl text-xs hover:bg-rose-500/10 transition-all cursor-pointer flex items-center gap-1.5">
+                <Trash2 className="w-3.5 h-3.5" /> Delete club
+              </button>
             </div>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-          {/* Left Column: Feed & Main Tab Content (8 cols) */}
+          {}
           <div className="lg:col-span-8 space-y-5">
 
-            {/* PUBLIC FEED */}
+            {}
             {activeTab === 'public' && (
               <div className="space-y-4">
                 {isAdmin && (
@@ -407,13 +425,13 @@ export const Club: React.FC = () => {
                   </div>
                 ) : (
                   publicPosts.map((bp) => (
-                    <PostCard key={bp.id} postData={mapBackendPostToPostData(bp)} />
+                    <PostCard key={bp.id} postData={mapBackendPostToPostData(bp)} canManage={isAdmin} onDeleted={() => loadAllClubData()} onUpdated={() => loadAllClubData()} />
                   ))
                 )}
               </div>
             )}
 
-            {/* MEMBER ANNOUNCEMENTS */}
+            
             {activeTab === 'announcements' && isEnrolled && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-customBorder bg-card p-4">
@@ -449,7 +467,7 @@ export const Club: React.FC = () => {
               </div>
             )}
 
-            {/* EVENTS */}
+            
             {activeTab === 'events' && (
               <div className="space-y-4">
                 {events.length === 0 ? (
@@ -471,7 +489,7 @@ export const Club: React.FC = () => {
                               {ev.event_type}
                             </span>
                             <h4 className="text-base font-bold text-mainText mt-1.5">{ev.title}</h4>
-                            <p className="text-xs text-subText line-clamp-2 mt-1">{ev.short_description}</p>
+                            <p className="text-xs text-subText line-clamp-2 mt-1">{ev.description}</p>
                           </div>
                           <div className="pt-3 border-t border-customBorder/40 flex items-center justify-between text-xs text-subText font-mono">
                             <span>📅 {ev.start_time ? new Date(ev.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
@@ -487,7 +505,7 @@ export const Club: React.FC = () => {
               </div>
             )}
 
-            {/* MEMBERS */}
+            
             {activeTab === 'members' && (
               <div className="rounded-2xl border border-customBorder bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-customBorder pb-3">
@@ -498,9 +516,11 @@ export const Club: React.FC = () => {
                 </div>
 
                 <div className="divide-y divide-customBorder/40">
-                  {members.map((m) => (
+                  {members.map((m) => {
+                    const isOnlyAdmin = isAdminRole(m.role) && m.status === 'approved' && approvedAdminCount <= 1;
+                    return (
                     <div
-                      key={m.id}
+                      key={`${numericId}-${m.user_id}`}
                       onClick={() => navigate(`/profile/${m.student_id}`)}
                       className="py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-primary/40 rounded-xl transition-colors px-2 -mx-2"
                     >
@@ -523,30 +543,33 @@ export const Club: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {m.status === 'pending' && (
                             <button
-                              onClick={() => handleApproveMember(m.id)}
+                              onClick={(event) => { event.stopPropagation(); handleApproveMember(m.user_id); }}
                               className="px-2.5 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg hover:bg-emerald-500 cursor-pointer"
                             >
                               Approve
                             </button>
                           )}
                           <button
-                            onClick={() => handlePromoteToAdmin(m.id, m.role)}
-                            className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold rounded-lg hover:bg-amber-500/30 cursor-pointer"
+                            onClick={(event) => { event.stopPropagation(); handlePromoteToAdmin(m.user_id, m.role); }}
+                            disabled={isOnlyAdmin}
+                            title={isOnlyAdmin ? 'Assign another admin before demoting the only admin' : undefined}
+                            className={`px-2.5 py-1 border text-[11px] font-bold rounded-lg ${isOnlyAdmin ? 'bg-footer text-subText border-customBorder cursor-not-allowed' : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30 cursor-pointer'}`}
                           >
-                            {m.role === 'Admin' ? 'Demote' : 'Make Admin'}
+                            {isOnlyAdmin ? 'Only Admin' : isAdminRole(m.role) ? 'Demote' : 'Make Admin'}
                           </button>
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* SETTINGS — Extensive 3-Section Panel */}
+            
             {activeTab === 'settings' && isAdmin && (
               <form onSubmit={handleUpdateSettings} className="space-y-5">
-                {/* Section 1: Identity & Branding */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <Building2 className="w-3.5 h-3.5" /> Identity & Branding
@@ -673,7 +696,7 @@ export const Club: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Section 2: Membership & Access */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <UserCheck className="w-3.5 h-3.5" /> Membership & Access Control
@@ -706,7 +729,7 @@ export const Club: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Toggle switches */}
+                  
                   <div className="space-y-2 pt-1">
                     {[
                       {
@@ -745,7 +768,7 @@ export const Club: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Section 3: Privacy Settings */}
+                
                 <div className="rounded-2xl border border-customBorder bg-card p-6 space-y-4">
                   <h3 className="text-xs font-bold text-accent uppercase tracking-wider border-b border-customBorder pb-2 flex items-center gap-2">
                     <Lock className="w-3.5 h-3.5" /> Privacy Settings
@@ -788,7 +811,7 @@ export const Club: React.FC = () => {
 
           <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-5 self-start">
 
-            {/* About Card */}
+            
             <div className="rounded-2xl border border-customBorder bg-card p-5 space-y-4 shadow-sm">
               <h3 className="text-sm font-bold text-mainText border-b border-customBorder pb-2">
                 About {club?.title}
@@ -817,7 +840,7 @@ export const Club: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Stats Sidebar Card */}
+            
             <div className="rounded-2xl border border-customBorder bg-card p-5 space-y-3 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText">Club Activity</h3>
               <div className="grid grid-cols-2 gap-2 text-center text-xs">
@@ -837,7 +860,7 @@ export const Club: React.FC = () => {
         </div>
       </div>
 
-      {/* CREATE EVENT MODAL */}
+      
       {isCreateEventOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsCreateEventOpen(false)} />
@@ -925,7 +948,7 @@ export const Club: React.FC = () => {
               clubName={club?.title || 'Campus Club'}
               modalTitle="Create public club post"
               onClose={() => setIsCreatePostOpen(false)}
-              onPublish={() => {
+              onSaved={() => {
                 showNotification('Public post published.');
                 loadAllClubData();
               }}
@@ -934,7 +957,7 @@ export const Club: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE MEMBER ANNOUNCEMENT MODAL */}
+      
       {isCreateAnnouncementOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsCreateAnnouncementOpen(false)} />

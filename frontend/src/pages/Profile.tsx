@@ -16,7 +16,9 @@ import {
   Trash2,
   FolderGit2,
   Calendar,
-  Building2
+  Building2,
+  Link2,
+  Globe2
 } from 'lucide-react';
 
 import {
@@ -62,8 +64,9 @@ export const UserProfileView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('posts');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Edit states
+  
   const [bioInput, setBioInput] = useState('');
+  const [socialsInput, setSocialsInput] = useState({ github: '', linkedin: '', twitter: '', website: '' });
   const [skillsList, setSkillsList] = useState<Skill[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('Intermediate');
@@ -108,10 +111,14 @@ export const UserProfileView: React.FC = () => {
         if (!userData) throw new Error('User not found');
         setProfile(userData);
         setBioInput(userData.bio || '');
+        setSocialsInput({
+          github: userData.socials?.github || '', linkedin: userData.socials?.linkedin || '',
+          twitter: userData.socials?.twitter || '', website: userData.socials?.website || '',
+        });
         setSkillsList(userData.skills || []);
         setSocialsState(userData.socials || {});
 
-        // Filter projects vs general posts
+        
         const projList = userPosts.filter((p) => p.post_type === 'project');
         const generalPosts = userPosts.filter((p) => p.post_type !== 'project');
 
@@ -152,7 +159,7 @@ export const UserProfileView: React.FC = () => {
     const updated = await updateUserApi(profile.student_id, {
       bio: bioInput,
       skills: skillsList,
-      socials: socialsState,
+      socials: Object.fromEntries(Object.entries(socialsInput).filter(([, value]) => value.trim())),
     });
     if (updated) {
       setProfile(updated);
@@ -183,7 +190,7 @@ export const UserProfileView: React.FC = () => {
     }
   };
 
-  // ── Loading ──
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -195,7 +202,7 @@ export const UserProfileView: React.FC = () => {
     );
   }
 
-  // ── Error ──
+  
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center p-8">
@@ -213,17 +220,17 @@ export const UserProfileView: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary text-mainText font-sans pb-16">
 
-      {/* Simple Banner */}
+      {}
       <div className="h-32 w-full bg-footer border-b border-customBorder" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
 
-        {/* Identity Panel */}
+        {}
         <div className="bg-card border border-customBorder rounded-2xl p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
 
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
-              {/* Avatar */}
+              {}
               <div className="relative">
                 {profile.profile_pic ? (
                   <img
@@ -304,7 +311,7 @@ export const UserProfileView: React.FC = () => {
               </div>
             </div>
 
-            {/* Edit controls */}
+            {}
             {isOwnProfile && (
               <div className="flex gap-2">
                 {isEditing ? (
@@ -313,7 +320,7 @@ export const UserProfileView: React.FC = () => {
                       onClick={() => {
                         setBioInput(profile.bio || '');
                         setSkillsList(profile.skills || []);
-                        setSocialsState(profile.socials || {});
+                        setSocialsInput({ github: profile.socials?.github || '', linkedin: profile.socials?.linkedin || '', twitter: profile.socials?.twitter || '', website: profile.socials?.website || '' });
                         setIsEditing(false);
                       }}
                       className="px-4 py-2 bg-footer border border-customBorder text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer hover:bg-primary"
@@ -334,7 +341,7 @@ export const UserProfileView: React.FC = () => {
                     onClick={() => {
                       setBioInput(profile.bio || '');
                       setSkillsList(profile.skills || []);
-                      setSocialsState(profile.socials || {});
+                      setSocialsInput({ github: profile.socials?.github || '', linkedin: profile.socials?.linkedin || '', twitter: profile.socials?.twitter || '', website: profile.socials?.website || '' });
                       setIsEditing(true);
                     }}
                     className="flex items-center gap-2 px-5 py-2 bg-footer border border-customBorder hover:border-accent/40 text-mainText font-bold rounded-xl text-xs transition-all cursor-pointer shadow-sm hover:shadow-md"
@@ -348,13 +355,13 @@ export const UserProfileView: React.FC = () => {
           </div>
         </div>
 
-        {/* Two-Column Grid Layout */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* Left Sidebar: Bio + Skills Matrix */}
+          {}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* Bio Card */}
+            {}
             <div className="glass-panel rounded-2xl p-5 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
                 <User className="w-4 h-4 text-accent" /> Student Overview
@@ -411,7 +418,23 @@ export const UserProfileView: React.FC = () => {
               )}
             </div>
 
-            {/* Skills & Capability Matrix */}
+            <div className="bg-card border border-customBorder rounded-2xl p-5 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2"><Globe2 className="w-4 h-4 text-accent" /> Social links</h3>
+              {isEditing ? (
+                <div className="space-y-2">
+                  {([
+                    ['github', 'GitHub', Link2, 'https://github.com/your-name'],
+                    ['linkedin', 'LinkedIn', Link2, 'https://linkedin.com/in/your-name'],
+                    ['twitter', 'X / Twitter', Link2, 'https://x.com/your-name'],
+                    ['website', 'Website', Globe2, 'https://your-site.com'],
+                  ] as const).map(([key, label, Icon, placeholder]) => <label key={key} className="block"><span className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-subText"><Icon className="w-3.5 h-3.5" /> {label}</span><input type="url" value={socialsInput[key]} onChange={(event) => setSocialsInput((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} className="w-full bg-primary border border-customBorder text-mainText text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent" /></label>)}
+                </div>
+              ) : profile.socials && Object.values(profile.socials).some(Boolean) ? (
+                <div className="flex flex-wrap gap-2">{profile.socials.github && <a href={profile.socials.github} target="_blank" rel="noreferrer" className="btn-ghost text-xs"><Link2 className="w-3.5 h-3.5" /> GitHub</a>}{profile.socials.linkedin && <a href={profile.socials.linkedin} target="_blank" rel="noreferrer" className="btn-ghost text-xs"><Link2 className="w-3.5 h-3.5" /> LinkedIn</a>}{profile.socials.twitter && <a href={profile.socials.twitter} target="_blank" rel="noreferrer" className="btn-ghost text-xs"><Link2 className="w-3.5 h-3.5" /> X</a>}{profile.socials.website && <a href={profile.socials.website} target="_blank" rel="noreferrer" className="btn-ghost text-xs"><Globe2 className="w-3.5 h-3.5" /> Website</a>}</div>
+              ) : <p className="text-xs text-subText italic">{isOwnProfile ? 'Add your links with Edit Profile & Skills.' : 'No social links shared yet.'}</p>}
+            </div>
+
+            {}
             <div className="bg-card border border-customBorder rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
@@ -422,7 +445,7 @@ export const UserProfileView: React.FC = () => {
                 </span>
               </div>
 
-              {/* Edit skills control */}
+              {}
               {isEditing && (
                 <div className="space-y-2 pt-2 border-t border-customBorder/50">
                   <span className="text-[11px] font-bold text-subText uppercase">Add New Skill</span>
@@ -465,7 +488,7 @@ export const UserProfileView: React.FC = () => {
                 <span className="text-emerald-400"> Advanced</span> can lead or mentor.
               </p>
 
-              {/* Skills Matrix Table */}
+              {}
               {skillsList.length === 0 ? (
                 <p className="text-xs text-subText/50 italic">No skills listed yet.</p>
               ) : (
@@ -505,7 +528,7 @@ export const UserProfileView: React.FC = () => {
               )}
             </div>
 
-            {/* Quick Stats Summary */}
+            {}
             <div className="glass-panel rounded-2xl p-5 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-subText flex items-center gap-2">
                 <Layers className="w-4 h-4 text-accent" /> Activity Overview
@@ -532,11 +555,11 @@ export const UserProfileView: React.FC = () => {
 
           </div>
 
-          {/* Right Main Content Column */}
+          {}
           <div className="lg:col-span-8 space-y-6">
             <Tabs options={tabOptions} activeTab={activeTab} onChange={(k) => setActiveTab(k)} />
 
-            {/* TAB 1: POSTS */}
+            {}
             {activeTab === 'posts' && (
               <div className="space-y-4">
                 {posts.length === 0 ? (
@@ -554,7 +577,7 @@ export const UserProfileView: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 2: PROJECTS */}
+            {}
             {activeTab === 'projects' && (
               <div className="space-y-4">
                 {projects.length === 0 ? (
@@ -574,7 +597,7 @@ export const UserProfileView: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 3: JOINED CLUBS */}
+            {}
             {activeTab === 'clubs' && (
               <div className="space-y-4">
                 {clubs.length === 0 ? (
@@ -630,7 +653,7 @@ export const UserProfileView: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 4: REGISTERED EVENTS */}
+            {}
             {activeTab === 'events' && (
               <div className="space-y-4">
                 {events.length === 0 ? (
@@ -667,7 +690,7 @@ export const UserProfileView: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-xs text-subText line-clamp-2 mt-1 leading-relaxed">
-                              {ev.short_description}
+                              {ev.description}
                             </p>
                           </div>
                           <div className="pt-2 border-t border-customBorder/40 flex items-center justify-between text-[11px] text-subText font-mono">

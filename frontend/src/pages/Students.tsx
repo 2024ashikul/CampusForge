@@ -89,7 +89,7 @@ export const Students: React.FC = () => {
     <div className="min-h-screen bg-primary text-mainText px-4 py-8 md:px-12 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
 
-        {/* Header */}
+        {}
         <header className="border-b border-customBorder pb-6 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-2"><Users className="w-5 h-5 text-accent" /><span className="text-xs font-bold uppercase tracking-widest text-accent">Campus network</span></div>
@@ -98,7 +98,7 @@ export const Students: React.FC = () => {
           </div>
         </header>
 
-        {/* Futuristic Search & Filters Panel */}
+        {}
         <section className="glass-panel rounded-2xl p-5 mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
@@ -123,7 +123,7 @@ export const Students: React.FC = () => {
             </select>
           </div>
 
-          {/* Department filter */}
+          {}
           <div className="border-t border-customBorder/40 pt-3">
             <span className="block text-subText text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
               <Filter className="w-3 h-3 text-accent" /> Filter by Department
@@ -145,7 +145,7 @@ export const Students: React.FC = () => {
             </div>
           </div>
 
-          {/* Skill Filter Bar */}
+          {}
           {allSkills.length > 1 && (
             <div className="border-t border-customBorder/40 pt-3">
               <span className="block text-subText text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -170,14 +170,14 @@ export const Students: React.FC = () => {
           )}
         </section>
 
-        {/* Result Count */}
+        {}
         <div className="flex justify-between items-center px-1 mb-5">
           <h2 className="text-xs font-bold text-subText uppercase tracking-widest font-mono">
             Showing {filteredProfiles.length} Student{filteredProfiles.length !== 1 ? 's' : ''}
           </h2>
         </div>
 
-        {/* Loading / Error States */}
+        {}
         {isLoading && (
           <div className="glass-panel flex flex-col items-center justify-center py-20 rounded-2xl gap-3">
             <Loader2 size={32} className="text-accent animate-spin" />
@@ -198,7 +198,7 @@ export const Students: React.FC = () => {
           </div>
         )}
 
-        {/* Student Cards Grid */}
+        {}
         {!isLoading && !error && filteredProfiles.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProfiles.map((profile) => (
@@ -235,7 +235,7 @@ export const Students: React.FC = () => {
                     <p className="text-xs text-subText/40 italic mb-4 min-h-[2.5rem]">No bio provided.</p>
                   )}
 
-                  {/* Skills Pills */}
+                  {}
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {(!profile.skills || profile.skills.length === 0) ? (
                       <span className="text-[10px] text-subText/40 italic font-mono">No skills listed</span>

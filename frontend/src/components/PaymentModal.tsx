@@ -42,10 +42,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     setErrorMsg('');
     setIsProcessing(true);
     try {
-      // Simulate network delay for realism
+      
       await new Promise((resolve) => setTimeout(resolve, 1200));
       setTxnId('CF-' + Math.floor(100000 + Math.random() * 900000));
-      // Pass only teamName — no payment data stored
+      
       await onConfirm(teamName.trim() || undefined);
       setIsProcessing(false);
       setIsSuccess(true);
@@ -144,7 +144,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               )}
 
-              {/* Fee Summary */}
+              {}
               <div className="glass-panel rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-subText">{type === 'club' ? 'Membership Fee' : 'Entrance Fee'}</span>
@@ -162,7 +162,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
-              {/* Demo payment methods — purely visual */}
+              {}
               {!isFree && (
                 <div className="space-y-3">
                   <label className="block text-xs font-semibold text-subText uppercase tracking-wider">

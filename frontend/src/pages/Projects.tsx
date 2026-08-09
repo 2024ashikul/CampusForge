@@ -1,18 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
-import type { PostData, PostAttachment } from '../interfaces/post.type';
+import type { PostData } from '../interfaces/post.type';
 import { PostForm } from '../components/Posts/PostForm';
 import { PostCard } from '../components/Posts/PostCard';
-import { getPostsApi, createPostApi, mapBackendPostToPostData } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { getPostsApi, mapBackendPostToPostData } from '../services/api';
 
 type SortOption = 'newest' | 'popular' | 'alphabetical';
 type CreatorFilter = 'all' | 'STUDENT' | 'CLUB';
 
 export const Projects: React.FC = () => {
-  const { user } = useAuth();
-
-  // --- Core Lifecycle States ---
+  
   const [projects, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
@@ -35,13 +32,13 @@ export const Projects: React.FC = () => {
     loadProjects();
   }, []);
 
-  // --- Search & Filtering Workspace States ---
+  
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [creatorFilter, setCreatorFilter] = useState<CreatorFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  // --- Dynamic Unique Taxonomy Tag Extraction ---
+  
   const allUniqueTags = useMemo(() => {
     const tagsSet = new Set<string>();
     projects.forEach((p) => {
@@ -52,7 +49,7 @@ export const Projects: React.FC = () => {
     return ['All', ...Array.from(tagsSet)];
   }, [projects]);
 
-  // --- Data Transformation Pipeline (Filter & Sort) ---
+  
   const filteredAndSortedProjects = useMemo(() => {
     let output = [...projects];
 
@@ -88,52 +85,9 @@ export const Projects: React.FC = () => {
     return output;
   }, [projects, searchQuery, creatorFilter, selectedTag, sortBy]);
 
-  // --- Handle Form Submissions via Modal Workspace ---
-  const handlePublish = async (
-    title: string,
-    markdown: string,
-    association: 'STUDENT' | 'CLUB',
-    attachments: any[],
-    tags: string[]
-  ) => {
-    const backendResult = await createPostApi({
-      title,
-      description: markdown,
-      post_type: 'project',
-      tags,
-      media: attachments,
-    });
-
-    if (backendResult) {
-      await loadProjects();
-    } else {
-      const newId = `project-local-${Date.now()}`;
-      const newProject: PostData = {
-        id: newId,
-        rawId: Date.now(),
-        title,
-        postType: 'project',
-        status: 'published',
-        markdownContent: markdown,
-        createdAt: 'Just now',
-        author: {
-          id: user ? user.student_id : 'u-current',
-          name: user ? user.name : 'Student Contributor',
-          avatar: user?.profile_pic || '👨‍💻',
-          association,
-          roleTitle: user ? user.department : 'Student Contributor',
-        },
-        attachments: attachments.map((a, i) => ({ ...a, id: `a-${newId}-${i}`, postId: newId })),
-        comments: [],
-        commentCount: 0,
-        tags: tags.length > 0 ? tags : ['Project', 'Showcase'],
-        reactionCounts: {},
-        userReaction: null,
-        clubId: null,
-        userId: user ? user.student_id : null,
-      };
-      setPosts((prev) => [newProject, ...prev]);
-    }
+  
+  const handleSaved = async () => {
+    await loadProjects();
     setIsModalOpen(false);
   };
 
@@ -157,10 +111,10 @@ export const Projects: React.FC = () => {
           </div>
         </header>
 
-        {/* --- Unified Horizontal Control Workspace --- */}
+        {}
         <section className="bg-footer border border-customBorder rounded-xl p-5 mb-8 space-y-4">
           
-          {/* Main Input Controls Row */}
+          {}
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1">
               <input
@@ -173,7 +127,7 @@ export const Projects: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
-              {/* Creator Classification Toggle Segments */}
+              {}
               <div className="inline-flex rounded-lg bg-primary p-1 border border-customBorder">
                 {([
                   { key: 'all', display: 'All' },
@@ -194,7 +148,7 @@ export const Projects: React.FC = () => {
                 ))}
               </div>
 
-              {/* Functional Sorting Dropdown */}
+              {}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -207,7 +161,7 @@ export const Projects: React.FC = () => {
             </div>
           </div>
 
-          {/* Metadata Taxonomy Tag Bar Selection */}
+          {}
           <div className="border-t border-customBorder/50 pt-3">
             <span className="block text-subText text-[11px] font-bold uppercase tracking-wider mb-2">
               Filter by Engineering Meta Tag
@@ -230,7 +184,7 @@ export const Projects: React.FC = () => {
           </div>
         </section>
 
-        {/* --- Main Centered Content Stream Pipeline --- */}
+        {}
         <main className="space-y-6">
           <div className="flex justify-between items-center px-1">
             <h2 className="text-xs font-bold text-subText uppercase tracking-[0.2em]">
@@ -238,7 +192,7 @@ export const Projects: React.FC = () => {
             </h2>
           </div>
 
-          {/* Backend Status Indicator */}
+          {}
           {backendOnline === false && (
             <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-red-900/20 border border-red-500/40 rounded-xl text-xs">
               <span className="text-red-400 shrink-0">⚡</span>
@@ -246,12 +200,6 @@ export const Projects: React.FC = () => {
                 <span className="font-bold text-red-300">Backend API is offline.</span>
                 <span className="text-red-400/80 ml-1">Run: <code className="font-mono bg-red-900/30 px-1 rounded">cd backend && python3 standalone_server.py</code></span>
               </div>
-            </div>
-          )}
-          {backendOnline === true && projects.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-green-900/20 border border-green-500/30 rounded-lg text-[10px] font-mono text-green-400">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              Live from CampusForge API · {projects.length} project showcases loaded
             </div>
           )}
 
@@ -269,30 +217,31 @@ export const Projects: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {filteredAndSortedProjects.map((project) => (
-                <PostCard key={project.id} postData={project} />
+                <PostCard key={project.id} postData={project} onDeleted={(postId) => setPosts((current) => current.filter((project) => project.rawId !== postId))} onUpdated={(updated) => setPosts((current) => current.map((project) => project.rawId === updated.rawId ? updated : project))} />
               ))}
             </div>
           )}
         </main>
 
-        {/* --- Pop-up Dialog Workflow Workbench Modal --- */}
+        {}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             
-            {/* Backdrop Layer Blur Effect Overlay */}
+            {}
             <div 
               className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               onClick={() => setIsModalOpen(false)}
             />
             
-            {/* Active Modal Form Payload Container */}
+            {}
             <div className="relative w-full max-w-2xl bg-card border border-customBorder rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col transform transition-all">
               
               <div className="p-6 overflow-y-auto bg-primary/30">
                 <PostForm 
                   modalTitle="Publish Project Showcase" 
                   onClose={() => setIsModalOpen(false)} 
-                  onPublish={handlePublish} 
+                  postType="project"
+                  onSaved={handleSaved}
                 />
               </div>
 

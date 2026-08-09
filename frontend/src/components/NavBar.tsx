@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
     <nav className="sticky top-0 z-40 w-full bg-card border-b border-customBorder">
       <div className="max-w-[1180px] mx-auto px-4 md:px-5 h-14 flex items-center justify-between">
 
-        {/* Brand */}
+        {}
         <button
           className="flex items-center gap-2 group cursor-pointer"
           onClick={() => navigate('/')}
@@ -52,7 +52,7 @@ export const Navbar: React.FC = () => {
           </span>
         </button>
 
-        {/* Desktop Nav */}
+        {}
         <div className="hidden lg:flex items-center gap-1">
           {navItems.map((item) => (
             <button
@@ -70,7 +70,7 @@ export const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex items-center gap-1.5">
           <button
             onClick={toggleTheme}
@@ -107,7 +107,7 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {}
       {mobileOpen && (
         <div className="lg:hidden border-t border-customBorder bg-card px-4 py-3 grid grid-cols-3 gap-1">
           {navItems.map((item) => (

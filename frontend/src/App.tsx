@@ -18,7 +18,7 @@ import Login from './pages/Login';
 import Skills from './pages/Skills';
 import { Loader2 } from 'lucide-react';
 
-// ─── App Routes ────────────────────────────────────────────────────────────────
+
 
 function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -30,10 +30,10 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login */}
+        {}
         <Route path="/login" element={<Login />} />
 
-        {/* Campus content requires a session. */}
+        {}
         <Route element={<StyleLayout />}>
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
@@ -50,14 +50,14 @@ function AppRoutes() {
           </Route>
         </Route>
 
-        {/* Fallback */}
+        {}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
-// ─── Root App ─────────────────────────────────────────────────────────────────
+
 
 function App() {
   return (
