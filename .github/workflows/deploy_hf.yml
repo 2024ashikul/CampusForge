@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy:
-    name: Erase & Deploy Backend to Hugging Face Spaces
+    name: Erase Demo & Deploy CampusForge Backend to Hugging Face
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🚀 Erase HF Space & Deploy Backend
+      - name: 🚀 Erase Demo Project & Force Push CampusForge Backend
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
@@ -32,13 +32,14 @@ jobs:
           git config --global user.email "ci@github.com"
           git config --global user.name "GitHub Actions"
 
-          # 1. Create a clean isolated build folder for Hugging Face Space
+          # 1. Create clean isolated deployment directory
+          rm -rf /tmp/hf_deploy
           mkdir -p /tmp/hf_deploy
-          
-          # 2. Copy all backend code into the deployment folder
+
+          # 2. Copy CampusForge backend files to root of deployment directory
           cp -r backend/* /tmp/hf_deploy/
-          
-          # 3. Create Hugging Face Space README.md with YAML metadata
+
+          # 3. Create Hugging Face Space YAML README.md at root
           cat << 'EOF' > /tmp/hf_deploy/README.md
 ---
 title: CampusForge Backend API
@@ -54,19 +55,67 @@ pinned: false
 Deployed automatically via GitHub Actions CI/CD.
 EOF
 
-          # 4. Initialize fresh Git repository in the deployment directory to completely overwrite HF Space
+          # 4. Create root Dockerfile inside deployment directory
+          cat << 'EOF' > /tmp/hf_deploy/Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=7860
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /app/uploads
+
+EXPOSE 7860
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+EOF
+
+          # 5. Initialize fresh Git repo in /tmp/hf_deploy (wipes all old demo project files)
           cd /tmp/hf_deploy
           git init -b main
           git config user.email "ci@github.com"
           git config user.name "GitHub Actions"
           git add .
-          git commit -m "Erase and redeploy CampusForge backend [Automated CI/CD]"
+          git commit -m "Erase demo project and deploy CampusForge backend"
 
-          # 5. Configure target Hugging Face Space remotes
-          SPACE_NAME=${HF_SPACE_NAME:-demo}
-          
-          git remote add hf https://ashikulislam2024:${HF_TOKEN}@huggingface.co/spaces/ashikulislam2024/${SPACE_NAME} || \
-          git remote add hf https://2024ashikul:${HF_TOKEN}@huggingface.co/spaces/2024ashikul/${SPACE_NAME} || true
+          # 6. Target Space configuration
+          TARGET_SPACE=${HF_SPACE_NAME:-demo}
 
-          # 6. Force push to HF main branch to erase previous HF content and deploy backend
-          git push -f hf main:main || echo "Hugging Face sync attempted. Verify HF_TOKEN secret permissions if needed."
+          echo "Target Hugging Face Space: $TARGET_SPACE"
+
+          # Remote target candidates
+          REMOTES=(
+            "https://ashikulislam2024:${HF_TOKEN}@huggingface.co/spaces/ashikulislam2024/${TARGET_SPACE}"
+            "https://2024ashikul:${HF_TOKEN}@huggingface.co/spaces/2024ashikul/${TARGET_SPACE}"
+            "https://ashikulislam2024:${HF_TOKEN}@huggingface.co/spaces/ashikulislam2024/demo"
+            "https://2024ashikul:${HF_TOKEN}@huggingface.co/spaces/2024ashikul/demo"
+            "https://ashikulislam2024:${HF_TOKEN}@huggingface.co/spaces/ashikulislam2024/campusforge-backend"
+            "https://2024ashikul:${HF_TOKEN}@huggingface.co/spaces/2024ashikul/campusforge-backend"
+          )
+
+          SUCCESS=0
+          for REMOTE in "${REMOTES[@]}"; do
+            MASKED_REMOTE=$(echo "$REMOTE" | sed -E 's/:[^@]+@/@/')
+            echo "Attempting force push to: $MASKED_REMOTE"
+            if git push -f "$REMOTE" main:main; then
+              echo "✅ Successfully force-pushed CampusForge backend to Hugging Face Space!"
+              SUCCESS=1
+              break
+            fi
+          done
+
+          if [ $SUCCESS -eq 0 ]; then
+            echo "❌ Hugging Face deployment failed. Please verify your HF_TOKEN secret in GitHub repository settings."
+            exit 1
+          fi
