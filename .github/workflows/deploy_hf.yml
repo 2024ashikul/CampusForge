@@ -1,0 +1,36 @@
+name: Deploy Backend to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-hf:
+    name: 🚀 Push to Hugging Face Spaces
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🚀 Push code to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+        run: |
+          git config --global user.email "ci@github.com"
+          git config --global user.name "GitHub Actions"
+
+          USERNAME=${HF_USERNAME:-2024ashikul}
+          SPACE_NAME=${HF_SPACE_NAME:-campusforge-backend}
+
+          if [ -n "$HF_TOKEN" ]; then
+            git remote add hf https://$USERNAME:$HF_TOKEN@huggingface.co/spaces/$USERNAME/$SPACE_NAME || true
+            git push -f hf main || echo "Hugging Face sync skipped if HF credentials invalid."
+          else
+            echo "HF_TOKEN secret not set in GitHub repository settings. Skipping HF push."
+          fi
