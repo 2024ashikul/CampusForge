@@ -41,8 +41,9 @@ export const AnnouncementTab: React.FC<AnnouncementTabProps> = ({
 
                         {}
                         {ann.imageUrl && (
-                            <div className="w-full h-48 overflow-hidden border-b border-customBorder bg-slate-950 flex items-center justify-center">
-                                <img src={ann.imageUrl} alt="Update Asset" className="w-full h-full object-contain" />
+                            <div className="relative w-full h-48 overflow-hidden border-b border-customBorder bg-slate-950 flex items-center justify-center">
+                                <img src={ann.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none" />
+                                <img src={ann.imageUrl} alt="Update Asset" className="relative z-10 w-full h-full object-contain" />
                             </div>
                         )}
 

@@ -297,14 +297,22 @@ export const PostCard: React.FC<{ postData: PostData; isFocused?: boolean; canMa
                 .map((asset, index) => {
                   const youtubeEmbedUrl = asset.type === 'VIDEO' ? getYouTubeEmbedUrl(asset.url) : null;
                   return (
-                    <div key={index} className="relative m-1 rounded-xl border border-customBorder bg-black/80 flex items-center justify-center max-h-[32rem] overflow-hidden shadow-sm">
+                    <div key={index} className="relative m-1 rounded-xl border border-customBorder bg-slate-950/90 flex items-center justify-center max-h-[32rem] overflow-hidden shadow-sm">
                       {asset.type === 'PHOTO' ? (
-                        <img
-                          src={asset.url}
-                          alt="Attachment"
-                          className="w-full max-h-[32rem] object-contain rounded-lg"
-                          loading="lazy"
-                        />
+                        <>
+                          <img
+                            src={asset.url}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none"
+                          />
+                          <img
+                            src={asset.url}
+                            alt="Attachment"
+                            className="relative z-10 w-auto max-w-full max-h-[32rem] object-contain rounded-lg shadow-md"
+                            loading="lazy"
+                          />
+                        </>
                       ) : (
                         <div className="w-full h-full aspect-video max-h-96">
                           {youtubeEmbedUrl ? (

@@ -617,7 +617,8 @@ export const UserProfileView: React.FC = () => {
                       >
                          {c.details?.banner_url && (
                            <div className="h-28 w-full overflow-hidden relative bg-slate-950 flex items-center justify-center">
-                             <img src={c.details.banner_url} alt={c.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                             <img src={c.details.banner_url} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none" />
+                             <img src={c.details.banner_url} alt={c.title} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
                               {c.details?.category || 'club'}
                             </div>
@@ -673,7 +674,8 @@ export const UserProfileView: React.FC = () => {
                       >
                          {ev.details?.banner_url && (
                            <div className="h-28 w-full overflow-hidden relative bg-slate-950 flex items-center justify-center">
-                             <img src={ev.details?.banner_url} alt={ev.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                             <img src={ev.details?.banner_url} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none" />
+                             <img src={ev.details?.banner_url} alt={ev.title} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
                               {ev.event_type}
                             </div>

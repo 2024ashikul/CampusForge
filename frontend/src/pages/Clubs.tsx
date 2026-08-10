@@ -240,8 +240,14 @@ export default function CampusForgeClubsPage() {
                   <div className="relative h-28 w-full bg-slate-950 flex items-center justify-center overflow-hidden">
                     <img
                       src={club.bannerUrl || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=800&q=80'}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none"
+                    />
+                    <img
+                      src={club.bannerUrl || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=800&q=80'}
                       alt={club.name}
-                      className="w-full h-full object-contain"
+                      className="relative z-10 w-full h-full object-contain"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-3">
                       <div className="w-full flex items-center justify-between gap-2">
