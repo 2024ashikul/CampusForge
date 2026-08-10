@@ -616,8 +616,8 @@ export const UserProfileView: React.FC = () => {
                         className="glass-panel rounded-2xl overflow-hidden border border-customBorder hover:border-accent/40 transition-all duration-300 group flex flex-col justify-between"
                       >
                          {c.details?.banner_url && (
-                           <div className="h-28 w-full overflow-hidden relative">
-                             <img src={c.details.banner_url} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                           <div className="h-28 w-full overflow-hidden relative bg-slate-950 flex items-center justify-center">
+                             <img src={c.details.banner_url} alt={c.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
                               {c.details?.category || 'club'}
                             </div>
@@ -672,8 +672,8 @@ export const UserProfileView: React.FC = () => {
                         className="glass-panel rounded-2xl overflow-hidden border border-customBorder hover:border-accent/40 transition-all duration-300 group flex flex-col justify-between"
                       >
                          {ev.details?.banner_url && (
-                           <div className="h-28 w-full overflow-hidden relative">
-                             <img src={ev.details?.banner_url} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                           <div className="h-28 w-full overflow-hidden relative bg-slate-950 flex items-center justify-center">
+                             <img src={ev.details?.banner_url} alt={ev.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-[9px] font-bold text-white uppercase">
                               {ev.event_type}
                             </div>

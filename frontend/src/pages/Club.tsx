@@ -479,8 +479,8 @@ export const Club: React.FC = () => {
                     {events.map((ev) => (
                       <div key={ev.id} className="rounded-2xl border border-customBorder bg-card overflow-hidden hover:border-slate-700 transition-all flex flex-col justify-between">
                         {ev.details?.banner_url && (
-                          <div className="h-36 w-full overflow-hidden">
-                            <img src={ev.details.banner_url} alt={ev.title} className="w-full h-full object-cover" />
+                          <div className="h-36 w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                            <img src={ev.details.banner_url} alt={ev.title} className="w-full h-full object-contain" />
                           </div>
                         )}
                         <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
@@ -614,7 +614,7 @@ export const Club: React.FC = () => {
                     </div>
                     <p className="text-[10px] text-subText">Upload an image or paste its URL, then save the settings to update the club cover.</p>
                     {editBannerUrl && (
-                      <img src={editBannerUrl} alt="Banner preview" className="h-28 w-full rounded-lg border border-customBorder object-cover" />
+                      <img src={editBannerUrl} alt="Banner preview" className="h-28 w-full rounded-lg border border-customBorder object-contain bg-slate-950" />
                     )}
                   </div>
 

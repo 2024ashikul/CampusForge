@@ -227,8 +227,8 @@ export default function EventsPage() {
 
               return (
                 <article key={event.id} onClick={() => navigate(`/event/${event.rawId || event.id}`)} className="entity-card flex flex-col overflow-hidden cursor-pointer">
-                  <div className="relative h-36 overflow-hidden">
-                    <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
+                  <div className="relative h-36 overflow-hidden bg-slate-950 flex items-center justify-center">
+                    <img src={image} alt="" className="w-full h-full object-contain transition-transform duration-500 hover:scale-105" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute top-3 left-3 flex gap-1.5">
                       <span className="status-pill bg-black/50 text-white border-white/10 backdrop-blur-sm">

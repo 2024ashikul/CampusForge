@@ -55,8 +55,8 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   return (
     <section className="w-full max-w-[1180px] mx-auto px-4 sm:px-5 mb-6">
       <div className="glass-panel overflow-hidden">
-        <div className="relative h-36 sm:h-44 md:h-52 bg-footer">
-          <img src={bannerUrl} alt={`${name} cover`} className="w-full h-full object-cover" />
+        <div className="relative h-36 sm:h-44 md:h-52 bg-slate-950 flex items-center justify-center overflow-hidden">
+          <img src={bannerUrl} alt={`${name} cover`} className="w-full h-full object-contain" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
           <span className="absolute top-4 left-4 rounded-full bg-black/35 border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
             {entityLabel}
