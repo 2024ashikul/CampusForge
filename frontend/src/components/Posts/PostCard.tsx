@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../ui/UserAvatar';
 import { PostForm } from './PostForm';
+import { ImageViewerModal } from '../ui/ImageViewerModal';
 
 const MarkdownPreview = React.lazy(() =>
   import('@uiw/react-md-editor').then((mod) => ({ default: mod.default.Markdown }))
@@ -33,6 +34,8 @@ export const PostCard: React.FC<{ postData: PostData; isFocused?: boolean; canMa
   const [menuMessage, setMenuMessage] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const [viewerState, setViewerState] = useState<{ isOpen: boolean; index: number }>({ isOpen: false, index: 0 });
+  const photoAttachments = postData.attachments?.filter((a) => a.type === 'PHOTO') || [];
 
   
   const [reactionCounts, setReactionCounts] = useState(postData.reactionCounts || {});
@@ -308,8 +311,12 @@ export const PostCard: React.FC<{ postData: PostData; isFocused?: boolean; canMa
                           />
                           <img
                             src={asset.url}
-                            alt="Attachment"
-                            className="relative z-10 w-auto max-w-full max-h-[32rem] object-contain rounded-lg shadow-md"
+                            alt="Attachment (click for full view)"
+                            onClick={() => {
+                              const photoIdx = photoAttachments.findIndex((p) => p.url === asset.url);
+                              setViewerState({ isOpen: true, index: photoIdx >= 0 ? photoIdx : 0 });
+                            }}
+                            className="relative z-10 w-auto max-w-full max-h-[32rem] object-contain rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-[1.01]"
                             loading="lazy"
                           />
                         </>
@@ -539,6 +546,13 @@ export const PostCard: React.FC<{ postData: PostData; isFocused?: boolean; canMa
           </div>
         </div>
       )}
+
+      <ImageViewerModal
+        isOpen={viewerState.isOpen}
+        initialIndex={viewerState.index}
+        images={photoAttachments.map((p) => p.url)}
+        onClose={() => setViewerState({ isOpen: false, index: 0 })}
+      />
     </article>
   );
 };

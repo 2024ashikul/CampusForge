@@ -41,6 +41,7 @@ import type { Socials } from '../interfaces/student.type';
 import { useAuth } from '../context/AuthContext';
 import { type TabOption, Tabs } from '../components/Tabs';
 import { PostCard } from '../components/Posts/PostCard';
+import { ImageViewerModal } from '../components/ui/ImageViewerModal';
 
 type TabKey = 'posts' | 'projects' | 'clubs' | 'events';
 
@@ -63,6 +64,7 @@ export const UserProfileView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabKey>('posts');
   const [isEditing, setIsEditing] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
 
   
   const [bioInput, setBioInput] = useState('');
@@ -236,7 +238,9 @@ export const UserProfileView: React.FC = () => {
                   <img
                     src={profile.profile_pic}
                     alt={profile.name}
-                    className="w-28 h-28 rounded-2xl border-4 border-primary object-cover shadow-lg"
+                    onClick={() => setViewerUrl(profile.profile_pic || null)}
+                    className="w-28 h-28 rounded-2xl border-4 border-primary object-cover shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                    title="Click to view full image"
                   />
                 ) : (
                   <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-accent to-cyan-500 border-4 border-primary flex items-center justify-center text-4xl font-black text-white shadow-lg">
@@ -712,6 +716,12 @@ export const UserProfileView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ImageViewerModal
+        isOpen={!!viewerUrl}
+        images={viewerUrl ? [viewerUrl] : []}
+        onClose={() => setViewerUrl(null)}
+      />
     </div>
   );
 };

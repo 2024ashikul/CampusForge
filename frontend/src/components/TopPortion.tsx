@@ -1,6 +1,7 @@
-import type React from 'react';
+import React, { useState } from 'react';
 import { MapPin, Calendar, Users, Check, UserPlus } from 'lucide-react';
 import { RoleBadge, type UserRole } from './ui/RoleBadge';
+import { ImageViewerModal } from './ui/ImageViewerModal';
 
 export type EntityType = 'club' | 'event';
 
@@ -43,6 +44,8 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   isJoined,
   countdown,
 }) => {
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+
   const defaultAction =
     entityType === 'club'
       ? isJoined ? 'Joined' : 'Join Club'
@@ -55,14 +58,18 @@ export const TopPortion: React.FC<TopPortionProps> = ({
   return (
     <section className="w-full max-w-[1180px] mx-auto px-4 sm:px-5 mb-6">
       <div className="glass-panel overflow-hidden">
-        <div className="relative h-36 sm:h-44 md:h-52 bg-slate-950 flex items-center justify-center overflow-hidden">
+        <div
+          onClick={() => setViewerUrl(bannerUrl)}
+          className="relative h-36 sm:h-44 md:h-52 bg-slate-950 flex items-center justify-center overflow-hidden cursor-pointer group"
+          title="Click to view full screen banner"
+        >
           <img
             src={bannerUrl}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-110 pointer-events-none"
           />
-          <img src={bannerUrl} alt={`${name} cover`} className="relative z-10 w-full h-full object-contain" />
+          <img src={bannerUrl} alt={`${name} cover`} className="relative z-10 w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.01]" />
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/15 to-transparent pointer-events-none" />
           <span className="absolute top-4 left-4 z-20 rounded-full bg-black/35 border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
             {entityLabel}
@@ -72,7 +79,15 @@ export const TopPortion: React.FC<TopPortionProps> = ({
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between -mt-9 sm:-mt-11">
             <div className="flex min-w-0 items-end gap-3 sm:gap-4">
-              <div className="flex h-18 w-18 sm:h-22 sm:w-22 shrink-0 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-footer text-3xl shadow-card sm:text-4xl">
+              <div
+                onClick={() => {
+                  if (logoUrl.startsWith('http') || logoUrl.startsWith('/')) setViewerUrl(logoUrl);
+                }}
+                className={`flex h-18 w-18 sm:h-22 sm:w-22 shrink-0 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-footer text-3xl shadow-card sm:text-4xl ${
+                  logoUrl.startsWith('http') || logoUrl.startsWith('/') ? 'cursor-pointer hover:opacity-90' : ''
+                }`}
+                title={logoUrl.startsWith('http') || logoUrl.startsWith('/') ? 'Click to view logo' : undefined}
+              >
                 {logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('/') ? (
                   <img src={logoUrl} alt={`${name} profile`} className="h-full w-full object-cover" />
                 ) : logoUrl}
@@ -113,6 +128,12 @@ export const TopPortion: React.FC<TopPortionProps> = ({
           </div>
         </div>
       </div>
+
+      <ImageViewerModal
+        isOpen={!!viewerUrl}
+        images={viewerUrl ? [viewerUrl] : []}
+        onClose={() => setViewerUrl(null)}
+      />
     </section>
   );
 };
